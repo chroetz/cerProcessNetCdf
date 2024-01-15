@@ -46,6 +46,16 @@ runShapeToMaskOneFileForAllRegions <- function(
   if (hasValue(batchIndexFilter)) {
     batchIndices <- intersect(batchIndices, batchIndexFilter)
   }
+  if (length(batchIndices) == 0) {
+    cat("No batches to process.\n")
+    cat("nBatches:", nBatches, "\n")
+    cat("batchSize:", batchSize, "\n")
+    if (hasValue(batchIndexFilter)) {
+      cat("batchIndexFilter:", paste(batchIndexFilter, collapse=","), "\n")
+    }
+    return(invisible())
+  }
+  cat("Process batches with index", paste(batchIndices, collapse=","), "\n")
   for (k in batchIndices) {
 
     # Don't overwrite
