@@ -104,25 +104,13 @@ runShapeToMaskOneFilePerRegion <- function(
 
   globe <- getGlobalRaster(nLon, nLat)
 
-  maskArray <- sapply(
-    shapeFilePaths,
-    simplify = "array",
-    rasterizeShape,
-    raster = globe$raster
-  )
+  initLonLatNetCdf(outFilePath, globe)
 
-  stopifnot(dim(maskArray)[1:2] == c(nLon, nLat))
-
-  dimnames(maskArray) <- list(
-    lon = character(0),
-    lat = character(0),
-    region = regionNames)
-
-  writeMasksAsNetCdf(
-    outFilePath,
-    maskArray,
-    dimLon = globe$dimLon,
-    dimLat = globe$dimLat)
+  for (k in seq_along(shapeFilePaths)) {
+    mat <- rasterizeShape(shapeFilePaths[k], globe$raster)
+    stopifnot(dim(mat) == c(nLon, nLat))
+    writeLonLatVariable(outFilePath, regionNames[k], mat)
+  }
 }
 
 
@@ -160,37 +148,6 @@ getGlobalRaster <- function(nLon, nLat) {
     dimLon = raster::xFromCol(rasterGlobal),
     dimLat = raster::yFromRow(rasterGlobal),
     coordinates = raster::coordinates(rasterGlobal)))
-}
-
-
-writeMasksAsNetCdf <- function(outFilePath, maskArray, dimLon, dimLat) {
-
-  pt <- proc.time()
-  cat("Write mask data of size", dim(maskArray), "to", outFilePath, "... ")
-
-  stopifnot(
-    length(dimLon) == dim(maskArray)[1],
-    length(dimLat) == dim(maskArray)[2])
-  nLon <- length(dimLon)
-  nLat <- length(dimLat)
-  varNames <- dimnames(maskArray)[[3]]
-  rnc <- create.nc(outFilePath, format = "netcdf4")
-  dim.def.nc(rnc, "lon", dimlength = nLon)
-  var.def.nc(rnc, "lon", "NC_DOUBLE", "lon")
-  var.put.nc(rnc, "lon", dimLon)
-  att.put.nc(rnc, "lon", "units", "NC_CHAR", "degree east")
-  dim.def.nc(rnc, "lat", dimlength = nLat)
-  var.def.nc(rnc, "lat", "NC_DOUBLE", "lat")
-  var.put.nc(rnc, "lat", dimLat)
-  att.put.nc(rnc, "lat", "units", "NC_CHAR", "degree north")
-  for (varName in varNames) {
-    var.def.nc(rnc, varName, "NC_DOUBLE", c("lon", "lat"), deflate = 9)
-    att.put.nc(rnc, varName, "units", "NC_CHAR", "1")
-    var.put.nc(rnc, varName, maskArray[,,varName])
-  }
-  close.nc(rnc)
-
-  cat("done after", (proc.time() - pt)[3], "s\n")
 }
 
 
