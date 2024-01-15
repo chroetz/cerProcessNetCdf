@@ -31,15 +31,15 @@ runShapeToMaskOneFileForAllRegions <- function(
   n <- nrow(sf)
   allIndices <- seq_len(n)
   batchSize <- ceiling(n/nBatches)
-  batchIndexList <- lapply(
+  listOfIndicesOfBatches <- lapply(
     seq_len(nBatches),
     \(i) allIndices[((i-1)*batchSize+1):min(n, i*batchSize)])
   nDigits <- floor(log10(n)+1)
   outFileNames <- sapply(
-    batchIndexList,
-    \(batchIndices) sprintf(
+    listOfIndicesOfBatches,
+    \(indicesOfBatch) sprintf(
       paste0("%s_%0", nDigits,"d_to_%0", nDigits,"d.nc"),
-      outFilePrefix, min(batchIndices), max(batchIndices)))
+      outFilePrefix, min(indicesOfBatch), max(indicesOfBatch)))
 
   cat("Start\n")
   batchIndices <- seq_len(nBatches)
@@ -51,31 +51,37 @@ runShapeToMaskOneFileForAllRegions <- function(
     # Don't overwrite
     if (file.exists(outFileNames[k])) next
 
-    batchIndices <- batchIndexList[[k]]
+    indicesOfBatch <- listOfIndicesOfBatches[[k]]
 
     cat("Start Batch ", k, "/", nBatches,
-        "from", min(batchIndices), "to", max(batchIndices), "\n")
+        "from", min(indicesOfBatch), "to", max(indicesOfBatch), "\n")
 
     pt <- proc.time()[3]
 
-    cat("claculate fraction; ")
-    results <- exactextractr::coverage_fraction(globe$raster, sf[batchIndices, ])
-    cat("reformat array; ")
-    # In the following line, t() turns lat lon order to lon lat, which is the format assumed by writeMasksAsNetCdf().
-    maskArray <- sapply(results, \(x) t(raster::as.matrix(x)), simplify="array")
+    maskArray <- sapply(
+      indicesOfBatch,
+      \(index) {
+        cat("calculate fraction; ")
+        res <- exactextractr::coverage_fraction(globe$raster, sf[index, ])
+        cat("reformat array; ")
+        # In the following line, t() turns lat lon order to lon lat, which is the format assumed by writeMasksAsNetCdf().
+        mat <- t(raster::as.matrix(x))
+        return(mat)
+      },
+      simplify="array")
+
+    cat("\n")
+    cat("Finished after", proc.time()[3] - pt, "s\n")
 
     dimnames(maskArray) <- list(
       lon = character(0),
       lat = character(0),
-      varName = sf[[idColumnName]][batchIndices])
+      varName = sf[[idColumnName]][indicesOfBatch])
 
-    cat("write file; ")
     writeMasksAsNetCdf(
       outFileNames[k],
       maskArray,
       dimLon = globe$dimLon, dimLat = globe$dimLat)
-
-    cat("Finished after", proc.time()[3] - pt, "s\n")
   }
 }
 
