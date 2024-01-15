@@ -38,6 +38,7 @@ runConcatNetCdf <- function(
   cat("Copy variables from all files to output file.\n")
   for (fileName in inFileNames) {
 
+    pt <- proc.time()
     cat("Processing", fileName, "\n")
     inNc <- open.nc(file.path(inFileDir, fileName))
     varNames <- ncGetNonDimVariableNames(inNc)
@@ -45,7 +46,6 @@ runConcatNetCdf <- function(
     # copy variables from inNc to outNc (requires dims to have the same order as in firstNc)
     for (varName in varNames) {
       cat(varName, ",", sep="")
-      gc(FALSE)
       varInfo <- var.inq.nc(inNc, varName)
       var.def.nc(outNc, varName, varInfo$type, varInfo$dimids, deflate=9)
       var.put.nc(outNc, varName, var.get.nc(inNc, varName))
@@ -59,10 +59,12 @@ runConcatNetCdf <- function(
           att.get.nc(inNc, varName, attInfo$name))
       }
     }
-
+    cat("\n")
     close.nc(inNc)
+    cat("Processing", fileName, "took", (proc.time() - pt)[3], "s.\n")
   }
 
+  cat("Close output file.\n")
   close.nc(outNc)
   cat("Done.\n")
 }
