@@ -38,7 +38,7 @@ runShapeToMaskOneFileForAllRegions <- function(
   outFileNames <- sapply(
     batchIndexList,
     \(batchIndices) sprintf(
-      paste0("%s_%0", nDigits,"d_to_%", nDigits,"d.nc"),
+      paste0("%s_%0", nDigits,"d_to_%0", nDigits,"d.nc"),
       outFilePrefix, min(batchIndices), max(batchIndices)))
 
   cat("Start\n")
