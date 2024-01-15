@@ -1,3 +1,4 @@
+#' @export
 runShapeToMaskOneFileForAllRegions <- function(
     shapeFilePath,
     nLon, nLat,
@@ -75,6 +76,7 @@ runShapeToMaskOneFileForAllRegions <- function(
 }
 
 
+#' @export
 runShapeToMaskOneFilePerRegion <- function(
     shapeFilePaths,
     nLon, nLat,
