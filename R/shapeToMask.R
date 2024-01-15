@@ -5,7 +5,7 @@ runShapeToMaskOneFileForAllRegions <- function(
     outFilePrefix,
     metaOutFilePath,
     idColumnName = NULL,
-    batchSize = 100,
+    nBatches = 10,
     batchIndexFilter = NULL
 ) {
 
@@ -28,7 +28,7 @@ runShapeToMaskOneFileForAllRegions <- function(
   # Prepare Batches.
   n <- nrow(sf)
   allIndices <- seq_len(n)
-  nBatches <- ceiling(n/batchSize)
+  batchSize <- ceiling(n/nBatches)
   batchIndexList <- lapply(
     seq_len(nBatches),
     \(i) allIndices[((i-1)*batchSize+1):min(n, i*batchSize)])
