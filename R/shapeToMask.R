@@ -104,13 +104,15 @@ runShapeToMaskOneFilePerRegion <- function(
 
   globe <- getGlobalRaster(nLon, nLat)
 
-  initLonLatNetCdf(outFilePath, globe)
+  outNc <- initLonLatNetCdf(outFilePath, globe)
 
   for (k in seq_along(shapeFilePaths)) {
     mat <- rasterizeShape(shapeFilePaths[k], globe$raster)
     stopifnot(dim(mat) == c(nLon, nLat))
-    writeLonLatVariable(outFilePath, regionNames[k], mat)
+    writeLonLatVariable(outNc, regionNames[k], mat)
   }
+
+  close.nc(outNc)
 }
 
 
@@ -162,6 +164,7 @@ initLonLatNetCdf <- function(outFilePath, raster) {
   var.def.nc(outNc, "lat", "NC_DOUBLE", "lat")
   var.put.nc(outNc, "lat", raster$dimLat)
   att.put.nc(outNc, "lat", "units", "NC_CHAR", "degree north")
+  return(outNc)
 }
 
 
