@@ -43,8 +43,9 @@ runConcatNetCdf <- function(
     varNames <- ncGetNonDimVariableNames(inNc)
 
     # copy variables from inNc to outNc (requires dims to have the same order as in firstNc)
-    cat("Copy variables:", paste0(varNames, collapse=", "), "\n")
     for (varName in varNames) {
+      cat(varName, ",", sep="")
+      gc(FALSE)
       varInfo <- var.inq.nc(inNc, varName)
       var.def.nc(outNc, varName, varInfo$type, varInfo$dimids, deflate=9)
       var.put.nc(outNc, varName, var.get.nc(inNc, varName))
