@@ -61,11 +61,12 @@ runShapeToMaskOneFileForAllRegions <- function(
     maskArray <- sapply(
       indicesOfBatch,
       \(index) {
-        cat("calculate fraction; ")
+        ptInner <- proc.time()[3]
+        cat(index, "... ")
         res <- exactextractr::coverage_fraction(globe$raster, sf[index, ])
-        cat("reformat array; ")
         # In the following line, t() turns lat lon order to lon lat, which is the format assumed by writeMasksAsNetCdf().
         mat <- t(raster::as.matrix(res[[1]]))
+        cat("done after", proc.time()[3] - ptInner, "s\n")
         return(mat)
       },
       simplify="array")
