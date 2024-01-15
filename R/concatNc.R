@@ -40,10 +40,11 @@ runConcatNetCdf <- function(
   for (fileName in inFileNames) {
 
     cat("Processing", fileName, "\n")
-    inNc <- open.nc(file.path(inFileDir, inFileNames[1]))
+    inNc <- open.nc(file.path(inFileDir, fileName))
     varNames <- ncGetNonDimVariableNames(inNc)
 
     # copy variables from inNc to outNc (requires dims to have the same order as in firstNc)
+    cat("Copy variables:", paste0(varNames, collapse=", "), "\n")
     for (varName in varNames) {
       varInfo <- var.inq.nc(inNc, varName)
       var.def.nc(outNc, varName, varInfo$type, varInfo$dimids)
