@@ -58,6 +58,10 @@ runShapeToMaskOneFileForAllRegions <- function(
   for (k in batchIndices) {
 
     indicesOfBatch <- listOfIndicesOfBatches[[k]]
+    if (length(indicesOfBatch) == 0 | any(is.na(indicesOfBatch))) {
+      cat("Empty or invalid batch", k, ". Skipping.\n")
+      next
+    }
 
     cat("Start Batch ", k, "/", nBatches,
         "from", min(indicesOfBatch), "to", max(indicesOfBatch), "\n")
@@ -124,7 +128,6 @@ rasterizeShape <- function(shapeFilePath, raster) {
   res <- t(raster::as.matrix(mask[[1]]))
   return(res)
 }
-
 
 
 guessIdColumnName <- function(sf) {
