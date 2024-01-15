@@ -12,8 +12,7 @@ runConcatNetCdf <- function(
   firstInNc <- open.nc(file.path(inFileDir, inFileNames[1]))
   fileInfo <- file.inq.nc(firstInNc)
   cat("Create output file.\n")
-  outNc <- create.nc(outFilePath, format = "netcdf4")
-  on.exit(close.nc(outNc))
+  outNc <- create.nc(outFilePath, format = "netcdf4", share = FALSE, prefill = FALSE)
 
   # copy dimensions from firstInNc to outNc
   cat("Copy dimensions from file", inFileNames[1], "to output file.\n")
@@ -63,5 +62,6 @@ runConcatNetCdf <- function(
     close.nc(inNc)
   }
 
+  close.nc(outNc)
   cat("Done.\n")
 }
