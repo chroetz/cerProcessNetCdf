@@ -47,7 +47,7 @@ runConcatNetCdf <- function(
     cat("Copy variables:", paste0(varNames, collapse=", "), "\n")
     for (varName in varNames) {
       varInfo <- var.inq.nc(inNc, varName)
-      var.def.nc(outNc, varName, varInfo$type, varInfo$dimids)
+      var.def.nc(outNc, varName, varInfo$type, varInfo$dimids, deflate=9)
       var.put.nc(outNc, varName, var.get.nc(inNc, varName))
       for (j in seq_len(varInfo$natts)) {
         attInfo <- att.inq.nc(inNc, varName, j - 1)
