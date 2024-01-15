@@ -16,7 +16,7 @@ runShapeToMaskOneFileForAllRegions <- function(
 
   isStandardClass <- sapply(sf, \(x) class(x)[1] %in% c("character", "numeric", "logical"))
 
-  if (!hasValue(idColumnName)) idColumnName <- guessIdColumnName(sf)
+  if (!hasValueString(idColumnName)) idColumnName <- guessIdColumnName(sf)
 
   meta <-
     unclass(sf)[isStandardClass] |>
