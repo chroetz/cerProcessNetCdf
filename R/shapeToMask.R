@@ -3,7 +3,7 @@ runShapeToMaskOneFileForAllRegions <- function(
     shapeFilePath,
     nLon, nLat,
     outFilePrefix,
-    metaOutFilePath,
+    metaOutFilePath = NULL,
     idColumnName = NULL,
     nBatches = 10,
     batchIndexFilter = NULL
@@ -18,10 +18,12 @@ runShapeToMaskOneFileForAllRegions <- function(
 
   if (!hasValueString(idColumnName)) idColumnName <- guessIdColumnName(sf)
 
-  meta <-
-    unclass(sf)[isStandardClass] |>
-    as_tibble()
-  readr::write_csv(meta, metaOutFilePath)
+  if (hasValueString(metaOutFilePath)) {
+    meta <-
+      unclass(sf)[isStandardClass] |>
+      as_tibble()
+    readr::write_csv(meta, metaOutFilePath)
+  }
 
   globe <- getGlobalRaster(nLon, nLat)
 
