@@ -40,8 +40,6 @@ runShapeToMaskOneFileForAllRegions <- function(
     \(indicesOfBatch) sprintf(
       paste0("%s_%0", nDigits,"d_to_%0", nDigits,"d.nc"),
       outFilePrefix, min(indicesOfBatch), max(indicesOfBatch)))
-
-  cat("Start\n")
   batchIndices <- seq_len(nBatches)
   if (hasValue(batchIndexFilter)) {
     batchIndices <- intersect(batchIndices, batchIndexFilter)
@@ -55,44 +53,36 @@ runShapeToMaskOneFileForAllRegions <- function(
     }
     return(invisible())
   }
+
   cat("Process batches with index", paste(batchIndices, collapse=","), "\n")
   for (k in batchIndices) {
-
-    # Don't overwrite
-    if (file.exists(outFileNames[k])) next
 
     indicesOfBatch <- listOfIndicesOfBatches[[k]]
 
     cat("Start Batch ", k, "/", nBatches,
         "from", min(indicesOfBatch), "to", max(indicesOfBatch), "\n")
 
+    if (file.exists(outFileNames[k])) {
+      cat("Skip batch", k, "because", outFileNames[k], "already exists.\n")
+      next
+    }
+
     pt <- proc.time()[3]
 
-    maskArray <- sapply(
-      indicesOfBatch,
-      \(index) {
-        ptInner <- proc.time()[3]
-        cat(index, "... ")
-        res <- exactextractr::coverage_fraction(globe$raster, sf[index, ])
-        # In the following line, t() turns lat lon order to lon lat, which is the format assumed by writeMasksAsNetCdf().
-        mat <- t(raster::as.matrix(res[[1]]))
-        cat("done after", proc.time()[3] - ptInner, "s\n")
-        return(mat)
-      },
-      simplify="array")
+    outNc <- initLonLatNetCdf(outFileNames[k], globe)
 
-    cat("\n")
+    for (index in indicesOfBatch) {
+      ptInner <- proc.time()[3]
+      cat(index, "... ")
+      res <- exactextractr::coverage_fraction(globe$raster, sf[index, ])
+      mat <- t(raster::as.matrix(res[[1]]))
+      varName <- sf[[idColumnName]][index]
+      writeLonLatVariable(outNc, varName, mat)
+      cat("done after", proc.time()[3] - ptInner, "s\n")
+    }
+
+    close.nc(outNc)
     cat("Finished after", proc.time()[3] - pt, "s\n")
-
-    dimnames(maskArray) <- list(
-      lon = character(0),
-      lat = character(0),
-      varName = sf[[idColumnName]][indicesOfBatch])
-
-    writeMasksAsNetCdf(
-      outFileNames[k],
-      maskArray,
-      dimLon = globe$dimLon, dimLat = globe$dimLat)
   }
 }
 
@@ -201,4 +191,25 @@ writeMasksAsNetCdf <- function(outFilePath, maskArray, dimLon, dimLat) {
   close.nc(rnc)
 
   cat("done after", (proc.time() - pt)[3], "s\n")
+}
+
+
+initLonLatNetCdf <- function(outFilePath, raster) {
+  cat("Create output file", outFilePath, "\n")
+  outNc <- create.nc(outFilePath, format = "netcdf4")
+  dim.def.nc(outNc, "lon", dimlength = raster$dimLon |> length())
+  var.def.nc(outNc, "lon", "NC_DOUBLE", "lon")
+  var.put.nc(outNc, "lon", raster$dimLon)
+  att.put.nc(outNc, "lon", "units", "NC_CHAR", "degree east")
+  dim.def.nc(outNc, "lat", dimlength = raster$dimLat |> length())
+  var.def.nc(outNc, "lat", "NC_DOUBLE", "lat")
+  var.put.nc(outNc, "lat", raster$dimLat)
+  att.put.nc(outNc, "lat", "units", "NC_CHAR", "degree north")
+}
+
+
+writeLonLatVariable <- function(outNc, varName, data, units = "1") {
+  var.def.nc(outNc, varName, "NC_DOUBLE", c("lon", "lat"), deflate = 9)
+  att.put.nc(outNc, varName, "units", "NC_CHAR", units)
+  var.put.nc(outNc, varName, data)
 }
