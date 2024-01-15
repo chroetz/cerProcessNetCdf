@@ -6,14 +6,17 @@ runConcatNetCdf <- function(
 ) {
 
   inFileNames <- dir(inFileDir, pattern = inFilePattern)
+  cat("Found", length(inFileNames), "files.\n")
 
   # Assume all files have the same dims (in the same order).
   firstInNc <- open.nc(file.path(inFileDir, inFileNames[1]))
   fileInfo <- file.inq.nc(firstInNc)
+  cat("Create output file.\n")
   outNc <- create.nc(outFilePath, format = "netcdf4")
   on.exit(close.nc(outNc))
 
   # copy dimensions from firstInNc to outNc
+  cat("Copy dimensions from file", inFileNames[1], "to output file.\n")
   for (i in seq_len(fileInfo$ndims)) {
     dimInfo <- dim.inq.nc(firstInNc, i - 1)
     varInfo <- var.inq.nc(firstInNc, dimInfo$name)
@@ -33,6 +36,7 @@ runConcatNetCdf <- function(
 
   close.nc(firstInNc)
 
+  cat("Copy variables from all files to output file.\n")
   for (fileName in inFileNames) {
 
     cat("Processing", fileName, "\n")
@@ -57,4 +61,6 @@ runConcatNetCdf <- function(
 
     close.nc(inNc)
   }
+
+  cat("Done.\n")
 }
