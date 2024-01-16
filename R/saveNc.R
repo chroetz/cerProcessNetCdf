@@ -1,5 +1,5 @@
-saveNetCdf <- function(outNcFilePath, name, dimList, values) {
-  outNc <- create.nc(outNcFilePath, format = "netcdf4", share = FALSE)
+saveNetCdf <- function(outFilePath, name, dimList, values) {
+  outNc <- create.nc(outFilePath, format = "netcdf4", share = FALSE)
   for (i in seq_along(dimList)) {
     dimName <- names(dimList)[i]
     dimType <- switch(
