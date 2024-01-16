@@ -34,7 +34,13 @@ runSumAggregation <- function(
 
   years <- getDataYears("variable")
   if (hasValue(yearsFilter)) years <- intersect(years, yearsFilter)
-  cat(length(years), "years to process in total.\n")
+  cat(
+    length(years),
+    "years to process in total, from",
+    min(years),
+    "to",
+    max(years),
+    "\n")
 
   regionNames <- .info$maskList$regionNames
   if (hasValue(regionFilter)) regionNames <- intersect(regionNames, regionFilter)
@@ -53,9 +59,9 @@ runSumAggregation <- function(
     "with",
     length(batch),
     "years from",
-    min(years),
+    min(batch),
     "to",
-    max(years),
+    max(batch),
     "\n")
 
   cat("Start main loop.\n")
@@ -82,7 +88,7 @@ runSumAggregation <- function(
       region = regionNames,
       value = values)
     cat("Write year", year, "values to file", .info$outFilePath, "\n")
-    readr::write_csv(result, .info$outFilePath, append = TRUE)
+    readr::write_csv(result, .info$outFilePath)
     cat("Year", year, "done after", (proc.time()-ptYear)[3], "s\n")
   }
   cat("End main loop.\n")
