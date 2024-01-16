@@ -11,7 +11,7 @@ setupMaskSummation <- function(
     argNames,
     \(nm) assign(nm, env[[nm]], .info))
 
-  gridFormat <- getNativeGridFormat(maskFilePath)
+  gridFormat <- getNativeGridFormatFromFile(maskFilePath)
   initializeGrid(gridFormat)
 
   openAndCheckMaskFile(maskFilePath)

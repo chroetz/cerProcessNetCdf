@@ -2,11 +2,10 @@
 
 S3method(format,GridFormat)
 S3method(print,GridFormat)
-export(createDataDescriptorSingleFile)
-export(createDataDescriptorYearlyFiles)
 export(createGridFormat)
 export(getBoundingBoxesFromMask)
-export(getNativeGridFormat)
+export(getNativeGridFormatFromFile)
+export(getNativeGridFormatFromNc)
 export(getNcInfo)
 export(ncGetDimensionIndex)
 export(ncGetDimensionNames)

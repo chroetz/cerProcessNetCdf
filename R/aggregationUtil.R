@@ -87,7 +87,7 @@ normalizeDistribution <- function(unnormalizedDistribution, naToZero = TRUE) {
 
 
 getSingleBoundingBox <- function(boundingBoxes, regionName) {
-  boundingBoxIndex <- which(boundingBoxes$GID_1 == regionName)
+  boundingBoxIndex <- which(boundingBoxes$regionName == regionName)
   stopifnot(length(boundingBoxIndex) == 1)
   nms <- c("min_lon", "max_lon", "min_lat", "max_lat")
   bbInfo <- lapply(nms, \(nm) boundingBoxes[[nm]][boundingBoxIndex])
@@ -163,6 +163,8 @@ openAndCheckMaskFile <- function(filePath) {
     c(lon = ncGetDimensionIndex(nc, "lon"),
       lat = ncGetDimensionIndex(nc, "lat"))
   maskList$regionNames <- ncGetNonDimVariableNames(nc)
+  maskList$gridFormat <- getNativeGridFormatFromNc(nc)
+  cat("Grid format of mask file:", format(maskList$gridFormat), "\n")
   .info$maskList <- maskList
 }
 
@@ -307,7 +309,10 @@ readBoundingBoxes <- function(filePath) {
   nc <- open.nc(filePath)
   on.exit(close.nc(nc))
   .info$boundingBoxes <- read.nc(nc)
-  # TODO: check GridFormat
+  cat(
+    "Grid format of bounding boxes:",
+    format(getNativeGridFormatFromNc(nc, onlyLonLat=TRUE)),
+    "\n")
 }
 
 
@@ -315,6 +320,9 @@ readMaskSum <- function(filePath) {
   nc <- open.nc(filePath)
   on.exit(close.nc(nc))
   .info$maskSum <- read.nc(nc)
-  # TODO: check GridFormat
+  cat(
+    "Grid format of mask sum:",
+    format(getNativeGridFormatFromNc(nc)),
+    "\n")
 }
 

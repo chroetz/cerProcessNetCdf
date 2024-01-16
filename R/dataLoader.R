@@ -1,9 +1,10 @@
 loadData <- function(name, dataDescriptor, targetVariable=NULL) {
+  subclass <- ConfigOpts::getClassAt(dataDescriptor, 2)
   switch(
-    dataDescriptor$type,
+    subclass,
     YearlyFiles = loadDataYearlyFiles(name, dataDescriptor, targetVariable),
     SingleFile = loadDataSingleFile(name, dataDescriptor, targetVariable),
-    stop("Unknown data descriptor type: ", dataDescriptor$type)
+    stop("Unknown DataDescriptor subclass: ", subclass)
   )
   return(invisible())
 }
@@ -22,6 +23,10 @@ loadDataYearlyFiles <- function(name, dataDescriptor, targetVariable = NULL) {
     variableName <- intersect(variableName, targetVariable)
   }
   stopifnot(length(variableName) == 1)
+  cat(
+    "Grid format of variable", variableName, ":",
+    getNativeGridFormatFromNc(nc, variableName),
+    "\n")
   varInfo <- var.inq.nc(nc, variableName)
   varDimIds <- varInfo$dimids
   dimIds <- c(
@@ -87,6 +92,10 @@ loadDataSingleFile <- function(name, dataDescriptor, targetVariable = NULL) {
     variableName <- intersect(variableName, targetVariable)
   }
   stopifnot(length(variableName) == 1)
+  cat(
+    "Grid format of variable", variableName, ":",
+    getNativeGridFormatFromNc(nc, variableName),
+    "\n")
 
   varInfo <- var.inq.nc(nc, variableName)
   varDimIds <- varInfo$dimids
@@ -144,11 +153,12 @@ getData <- function(name, year, setNaToZero = FALSE) {
 
   dataInfo <- .info$data[[name]]
   dataDescriptor <- dataInfo$descriptor
+  subclass <- ConfigOpts::getClassAt(dataDescriptor, 2)
   data <- switch(
-    dataDescriptor$type,
+    subclass,
     YearlyFiles = getDataYearlyFiles(dataInfo, year, setNaToZero),
     SingleFile = getDataSingleFile(dataInfo, year, setNaToZero),
-    stop("Unknown data descriptor type: ", dataDescriptor$type)
+    stop("Unknown DataDescriptor subclass: ", subclass)
   )
 
   # Make sure that lon and lat are increasing

@@ -1,0 +1,4 @@
+{
+  "_class": ["SingleFile", "DataDescriptor", "Opts"],
+  "filePath": "path/to/file"
+}

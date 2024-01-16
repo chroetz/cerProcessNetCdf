@@ -1,0 +1,8 @@
+{
+  "_class": ["GridFormat", "Opts"],
+  "nLon": 360,
+  "nLat": 180,
+  "lonIncreasing": true,
+  "latIncreasing": true,
+  "lonFirst": true
+}

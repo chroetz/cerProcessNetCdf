@@ -46,7 +46,7 @@ format.GridFormat <- function(x, ...) {
     "\tlat step size ", 180 / x$nLat, " degrees (", 180 / (x$nLat / 60)," arcmin)\n",
     "\tlon from -180 to 180 (", x$nLon, " values)\n",
     "\tlat from -90 to 90 (", x$nLat, " values)\n",
-    "\torder: ", if (x$lonFirst) "lon x lat" else "lat x lon", "\n",
+    "\torder: ", if (is.na(x$lonFirst)) "undefined" else if (x$lonFirst) "lon x lat" else "lat x lon", "\n",
     "\tlon in ", if (x$lonIncreasing) "increasing" else "decreasing", " order\n",
     "\tlat in ", if (x$latIncreasing) "increasing" else "decreasing", " order")
 }
@@ -85,26 +85,36 @@ initializeGrid <- function(targetFormat) {
 
 
 #' @export
-getNativeGridFormat <- function(filePath, variableName = NULL) {
-
+getNativeGridFormatFromFile <- function(filePath, variableName = NULL, onlyLonLat = FALSE) {
   nc <- open.nc(filePath)
-  dimNames <- ncGetDimensionNames(nc)
-  stopifnot(c("lon", "lat") %in% dimNames)
+  on.exit(close.nc(nc))
+  return(getNativeGridFormatFromNc(nc, variableName, onlyLonLat))
+}
+
+
+#' @export
+getNativeGridFormatFromNc <- function(nc, variableName = NULL, onlyLonLat = FALSE) {
+
+  allVarNames <- ncGetVariableNames(nc)
+  stopifnot(c("lon", "lat") %in% allVarNames)
   lonValues <- var.get.nc(nc, "lon")
   latValues <- var.get.nc(nc, "lat")
-  if (!hasValue(variableName)) {
-    variableName <- ncGetNonDimVariableNames(nc) |> first()
-  }
-  varInfo <- var.inq.nc(nc, variableName)
-  stopifnot(varInfo$ndims >= 2)
-  varDimNames <- vapply(
-    varInfo$dimids,
-    \(dimId) dim.inq.nc(nc, dimId)$name,
-    character(1))
-  stopifnot(c("lon", "lat") %in% varDimNames)
-  close.nc(nc)
+  if (onlyLonLat) {
+    lonFirst <- NA
+  } else {
+    if (!hasValue(variableName)) {
+      variableName <- ncGetNonDimVariableNames(nc) |> first()
+    }
+    varInfo <- var.inq.nc(nc, variableName)
+    stopifnot(varInfo$ndims >= 2)
+    varDimNames <- vapply(
+      varInfo$dimids,
+      \(dimId) dim.inq.nc(nc, dimId)$name,
+      character(1))
+    stopifnot(c("lon", "lat") %in% varDimNames)
 
-  lonFirst <- which(varDimNames == "lon") < which(varDimNames == "lat")
+    lonFirst <- which(varDimNames == "lon") < which(varDimNames == "lat")
+  }
 
   if (all(diff(lonValues) > 0)) {
     lonIncreasing <- TRUE
