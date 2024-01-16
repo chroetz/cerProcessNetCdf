@@ -74,7 +74,7 @@ runSumAggregation <- function(
     cat("Starting year", year, "\n")
     ptYear <- proc.time()
     variableValuesAll <- getData("variable", year, setNaToZero = TRUE)
-    scaledVariableValuesAll <- variableValuesAll #/ .info$maskSum$maskSum # TODO: this is invalid if there are overlapping regions
+    scaledVariableValuesAll <- variableValuesAll / .info$maskSum$maskSum # TODO: this is invalid if there are overlapping regions
 
     values <- vapply(
       regionNames,
