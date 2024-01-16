@@ -1,4 +1,4 @@
-saveNetCdf <- function(outNcFilePath, dimList, values) {
+saveNetCdf <- function(outNcFilePath, name, dimList, values) {
   outNc <- create.nc(outNcFilePath, format = "netcdf4", share = FALSE)
   for (i in seq_along(dimList)) {
     dimName <- names(dimList)[i]
@@ -12,8 +12,8 @@ saveNetCdf <- function(outNcFilePath, dimList, values) {
     var.def.nc(outNc, dimName, dimType, dimName)
     var.put.nc(outNc, dimName, dimList[[i]])
   }
-  var.def.nc(outNc, "maskSum", "NC_DOUBLE", names(dimList), deflate = 9)
-  var.put.nc(outNc, "maskSum", values)
+  var.def.nc(outNc, name, "NC_DOUBLE", names(dimList), deflate = 9)
+  var.put.nc(outNc, name, values)
   close.nc(outNc)
 }
 

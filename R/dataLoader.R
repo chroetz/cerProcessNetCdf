@@ -162,10 +162,10 @@ getData <- function(name, year, setNaToZero = FALSE) {
   )
 
   # Make sure that lon and lat are increasing
-  if (!dataInfo$lonIncreasing == .info$grid$lonIncreasing) {
+  if (dataInfo$lonIncreasing != .info$grid$lonIncreasing) {
     data <- reverseArrayDim(data, which(dimnames(data) |> names() == "lon"))
   }
-  if (!dataInfo$latIncreasing == .info$grid$latIncreasing) {
+  if (dataInfo$latIncreasing != .info$grid$latIncreasing) {
     data <- reverseArrayDim(data, which(dimnames(data) |> names() == "lat"))
   }
   if (!all(data |> dimnames() |> names() == .info$grid$orderedNames)) {

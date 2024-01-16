@@ -168,6 +168,7 @@ openAndCheckMaskFile <- function(filePath) {
 
 getMaskValues <- function(regionName, maskList, boundingBoxes = NULL) {
   if (hasValue(boundingBoxes)) {
+    # TODO: assumes lon, lat order and same format as bounding box
     bbInfo <- getSingleBoundingBox(boundingBoxes, regionName)
     values <- var.get.nc(
       maskList$nc,
@@ -314,6 +315,7 @@ readBoundingBoxes <- function(filePath) {
 readMaskSum <- function(filePath) {
   nc <- open.nc(filePath)
   on.exit(close.nc(nc))
+
   .info$maskSum <- read.nc(nc)
   cat(
     "Grid format of mask sum:",
