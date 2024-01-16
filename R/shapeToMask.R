@@ -2,11 +2,11 @@
 runShapeToMaskOneFileForAllRegions <- function(
     shapeFilePath,
     nLon, nLat,
-    outFilePrefix,
+    outFilePath,
     metaOutFilePath = NULL,
     idColumnName = NULL,
-    nBatches = 10,
-    batchIndexFilter = NULL
+    nBatches = 1,
+    batchIndex = 1
 ) {
 
   cat("read geodata file...")
@@ -29,65 +29,40 @@ runShapeToMaskOneFileForAllRegions <- function(
 
   # Prepare Batches.
   n <- nrow(sf)
-  allIndices <- seq_len(n)
-  batchSize <- ceiling(n/nBatches)
-  listOfIndicesOfBatches <- lapply(
-    seq_len(nBatches),
-    \(i) allIndices[((i-1)*batchSize+1):min(n, i*batchSize)])
-  nDigits <- floor(log10(n)+1)
-  outFileNames <- sapply(
-    listOfIndicesOfBatches,
-    \(indicesOfBatch) sprintf(
-      paste0("%s_%0", nDigits,"d_to_%0", nDigits,"d.nc"),
-      outFilePrefix, min(indicesOfBatch), max(indicesOfBatch)))
-  batchIndices <- seq_len(nBatches)
-  if (hasValue(batchIndexFilter)) {
-    batchIndices <- intersect(batchIndices, batchIndexFilter)
-  }
-  if (length(batchIndices) == 0) {
-    cat("No batches to process.\n")
-    cat("nBatches:", nBatches, "\n")
-    cat("batchSize:", batchSize, "\n")
-    if (hasValue(batchIndexFilter)) {
-      cat("batchIndexFilter:", paste(batchIndexFilter, collapse=","), "\n")
-    }
+  batches <- setupBatches(seq_len(n), nBatches)
+  cat("Split regions into ", nBatches, "batches.\n")
+  batches <- setupBatches(years, nBatches)
+  batch <- batches[[batchIndex]]
+  cat("Process batch", batchIndex, "with", length(batch), "regions\n")
+
+  if (length(batch) == 0 | any(is.na(batch))) {
+    cat("Empty or invalid batch. Skipping.\n")
     return(invisible())
   }
 
-  cat("Process batches with index", paste(batchIndices, collapse=","), "\n")
-  for (k in batchIndices) {
+  cat("Start batch from", min(batch), "to", max(batch), "\n")
 
-    indicesOfBatch <- listOfIndicesOfBatches[[k]]
-    if (length(indicesOfBatch) == 0 | any(is.na(indicesOfBatch))) {
-      cat("Empty or invalid batch", k, ". Skipping.\n")
-      next
-    }
-
-    cat("Start Batch ", k, "/", nBatches,
-        "from", min(indicesOfBatch), "to", max(indicesOfBatch), "\n")
-
-    if (file.exists(outFileNames[k])) {
-      cat("Skip batch", k, "because", outFileNames[k], "already exists.\n")
-      next
-    }
-
-    pt <- proc.time()[3]
-
-    outNc <- initLonLatNetCdf(outFileNames[k], globe)
-
-    for (index in indicesOfBatch) {
-      ptInner <- proc.time()[3]
-      cat(index, "... ")
-      res <- exactextractr::coverage_fraction(globe$raster, sf[index, ])
-      mat <- t(raster::as.matrix(res[[1]]))
-      varName <- sf[[idColumnName]][index]
-      writeLonLatVariable(outNc, varName, mat)
-      cat("done after", proc.time()[3] - ptInner, "s\n")
-    }
-
-    close.nc(outNc)
-    cat("Finished after", proc.time()[3] - pt, "s\n")
+  if (file.exists(outFilePath)) {
+    cat("Skip batch because", outFilePath, "already exists.\n")
+    return(invisible())
   }
+
+  pt <- proc.time()[3]
+
+  outNc <- initLonLatNetCdf(outFilePath, globe)
+
+  for (index in batch) {
+    ptInner <- proc.time()[3]
+    cat(index, "... ")
+    res <- exactextractr::coverage_fraction(globe$raster, sf[index, ])
+    mat <- t(raster::as.matrix(res[[1]]))
+    varName <- sf[[idColumnName]][index]
+    writeLonLatVariable(outNc, varName, mat)
+    cat("done after", proc.time()[3] - ptInner, "s\n")
+  }
+
+  close.nc(outNc)
+  cat("Finished after", proc.time()[3] - pt, "s\n")
 }
 
 
