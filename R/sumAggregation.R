@@ -93,7 +93,7 @@ runSumAggregation <- function(
       region = regionNames,
       value = values)
     cat("Write year", year, "values to file", .info$outFilePath, "\n")
-    readr::write_csv(result, .info$outFilePath, append = TRUE)
+    readr::write_csv(result, .info$outFilePath, append = TRUE, col_names = !file.exists(.info$outFilePath))
     cat("Year", year, "done after", (proc.time()-ptYear)[3], "s\n")
   }
   cat("End main loop.\n")
