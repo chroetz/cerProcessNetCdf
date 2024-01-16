@@ -12,8 +12,7 @@ testLoadAndGet <- function(
     latIncreasing = latIncreasing,
     lonFirst = lonFirst)
   initializeGrid(targetFormat)
-  loadData("testData", list(
-    type = "SingleFile",
+  loadData("testData", ConfigOpts::makeOpts(c("SingleFile", "DataDescriptor"),
     filePath = test_path(
       "data",
       sprintf(
