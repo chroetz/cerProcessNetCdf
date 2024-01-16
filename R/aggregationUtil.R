@@ -98,12 +98,9 @@ getSingleBoundingBox <- function(boundingBoxes, regionName) {
 
 subsetRegion <- function(valuesOnTotalGrid, regionName, boundingBoxes, grid) {
   bbInfo <- getSingleBoundingBox(boundingBoxes, regionName)
-  len <- grid$latValues |> length()
-  # TODO: check whether one needs to reverse the lat values
-  reversedLat <- reverseIndex(bbInfo$min_lat, bbInfo$max_lat, len)
   res <- valuesOnTotalGrid[
     bbInfo$min_lon:bbInfo$max_lon,
-    reversedLat$from:reversedLat$to,
+    bbInfo$min_lat:bbInfo$max_lat,
     drop=FALSE]
   return(res)
 }
@@ -181,8 +178,6 @@ getMaskValues <- function(regionName, maskList, boundingBoxes = NULL) {
   } else {
     values <- var.get.nc(maskList$nc, regionName)
   }
-
-  values <- reverseArrayDim(values, maskList$lonLatIdx["lat"])
 
   if (any(is.na(values))) {
     message("WARNING: NAs in mask values in region ", regionName)
