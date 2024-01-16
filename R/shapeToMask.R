@@ -32,6 +32,10 @@ runShapeToMaskOneFileForAllRegions <- function(
   cat("Split regions into ", nBatches, "batches.\n")
   batches <- setupBatches(seq_len(n), nBatches)
   batch <- batches[[batchIndex]]
+  if (length(batch) == 0) {
+    cat("Batch", batchIndex, "is empty. Nothing to do.\n")
+    return(invisible())
+  }
   cat("Process batch", batchIndex, "with", length(batch), "regions\n")
 
   if (length(batch) == 0 | any(is.na(batch))) {

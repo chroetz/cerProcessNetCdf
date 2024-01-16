@@ -40,10 +40,23 @@ runSumAggregation <- function(
   if (hasValue(regionFilter)) regionNames <- intersect(regionNames, regionFilter)
   cat(length(regionNames), "regions to process.\n")
 
-  cat("Split years into ", nBatches, "batches.\n")
+  cat("Split years into", nBatches, "batches.\n")
   batches <- setupBatches(years, nBatches)
   batch <- batches[[batchIndex]]
-  cat("Process batch", batchIndex, "with", length(batch), "years\n")
+  if (length(batch) == 0) {
+    cat("Batch", batchIndex, "is empty. Nothing to do.\n")
+    return(invisible())
+  }
+  cat(
+    "Process batch",
+    batchIndex,
+    "with",
+    length(batch),
+    "years from",
+    min(years),
+    "to",
+    max(years),
+    "\n")
 
   cat("Start main loop.\n")
   for (year in batch) {
