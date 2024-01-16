@@ -1,5 +1,16 @@
-testLoadAndGet <- function(n, year, lonFirst, lonIncreasing, latIncreasing, inLonIncreasing, inLatIncreasing, dimOrder = 1:3) {
-  targetFormat <- createGridFormat(2*n, n, lonIncreasing, latIncreasing, lonFirst)
+testLoadAndGet <- function(
+    n, year, lonFirst,
+    lonIncreasing, latIncreasing,
+    inLonIncreasing, inLatIncreasing,
+    dimOrder = 1:3
+) {
+  targetFormat <- ConfigOpts::makeOpts(
+    "GridFormat",
+    nLon = 2*n,
+    nLat = n,
+    lonIncreasing = lonIncreasing,
+    latIncreasing = latIncreasing,
+    lonFirst = lonFirst)
   initializeGrid(targetFormat)
   loadData("testData", list(
     type = "SingleFile",

@@ -29,7 +29,7 @@ runSumAggregation <- function(
     nBatches = 1,
     batchIndex = 1,
     yearsFilter = NULL,
-    regionIndices = NULL
+    regionFilter = NULL
 ) {
 
   years <- getDataYears("variable")

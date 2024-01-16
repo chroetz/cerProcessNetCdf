@@ -13,13 +13,13 @@ createGridFormat <- function(
     latIncreasing,
     lonFirst
 ) {
-  gridFormat <- lst(
-    nLon,
-    nLat,
-    lonIncreasing,
-    latIncreasing,
-    lonFirst)
-  class(gridFormat) <- "GridFormat"
+  gridFormat <- ConfigOpts::makeOpts(
+    "GridFormat",
+    nLon = nLon,
+    nLat = nLat,
+    lonIncreasing = lonIncreasing,
+    latIncreasing = latIncreasing,
+    lonFirst = lonFirst)
   return(gridFormat)
 }
 
