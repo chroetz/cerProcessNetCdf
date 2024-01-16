@@ -25,7 +25,7 @@ loadDataYearlyFiles <- function(name, dataDescriptor, targetVariable = NULL) {
   stopifnot(length(variableName) == 1)
   cat(
     "Grid format of variable", variableName, ":",
-    getNativeGridFormatFromNc(nc, variableName),
+    format(getNativeGridFormatFromNc(nc, variableName)),
     "\n")
   varInfo <- var.inq.nc(nc, variableName)
   varDimIds <- varInfo$dimids
@@ -94,7 +94,7 @@ loadDataSingleFile <- function(name, dataDescriptor, targetVariable = NULL) {
   stopifnot(length(variableName) == 1)
   cat(
     "Grid format of variable", variableName, ":",
-    getNativeGridFormatFromNc(nc, variableName),
+    format(getNativeGridFormatFromNc(nc, variableName)),
     "\n")
 
   varInfo <- var.inq.nc(nc, variableName)
