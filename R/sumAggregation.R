@@ -64,6 +64,11 @@ runSumAggregation <- function(
     max(batch),
     "\n")
 
+  if (file.exists(.info$outFilePath)) {
+    cat(.info$outFilePath, "already exists. Deleting.\n")
+    file.remove(.info$outFilePath)
+  }
+
   cat("Start main loop.\n")
   for (year in batch) {
     cat("Starting year", year, "\n")
@@ -88,7 +93,7 @@ runSumAggregation <- function(
       region = regionNames,
       value = values)
     cat("Write year", year, "values to file", .info$outFilePath, "\n")
-    readr::write_csv(result, .info$outFilePath)
+    readr::write_csv(result, .info$outFilePath, append = TRUE)
     cat("Year", year, "done after", (proc.time()-ptYear)[3], "s\n")
   }
   cat("End main loop.\n")
