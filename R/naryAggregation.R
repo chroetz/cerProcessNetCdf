@@ -84,14 +84,6 @@ processYearNaryAggregation <- function(year, regionNames) {
         .info$aggregateExpression,
         rlang::new_data_mask(dataEnv))
       cat("done after", (proc.time()-pt)[3], "s\n")
-      cat(paste(names(dataEnv)), "\n")
-      cat(typeof(value), "\n")
-      cat(typeof(.info$aggregateExpression), "\n")
-      cat(paste(names(.info$aggregateExpression)), "\n")
-      str(.info$aggregateExpression)
-      cat(.info$aggregateExpression, "\n")
-      str(value)
-      cat(value, "\n")
       return(value)
     },
     double(1))
