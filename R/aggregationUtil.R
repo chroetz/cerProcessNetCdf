@@ -106,17 +106,25 @@ getMaskValues <- function(regionName, maskList, bbInfo = NULL) {
 readBoundingBoxes <- function(filePath) {
   nc <- open.nc(filePath)
   on.exit(close.nc(nc))
-  .info$boundingBoxes <- read.nc(nc)
-  .info$boundingBoxFormat <- getNativeGridFormatFromNc(nc, onlyLonLat=TRUE)
+  bb <- read.nc(nc)
+  bbFormat <- getNativeGridFormatFromNc(nc, onlyLonLat=TRUE)
+
+  # TODO: this is a bit hacky:
+  # The region variable is the only character variable. Make sure it is named "regionName"
+  selRegion <- sapply(bb, typeof) == "character"
+  names(bb)[selRegion] <- "regionName"
+
   cat(
     "Grid format of bounding boxes:",
-    format(.info$boundingBoxFormat),
+    format(bbFormat),
     "\n")
   stopifnot(
-    .info$boundingBoxFormat$nLon == .info$maskList$gridFormat$nLon,
-    .info$boundingBoxFormat$nLat == .info$maskList$gridFormat$nLat,
-    .info$boundingBoxFormat$lonIncreasing == .info$maskList$gridFormat$lonIncreasing,
-    .info$boundingBoxFormat$latIncreasing == .info$maskList$gridFormat$latIncreasing)
+    bbFormat$nLon == .info$maskList$gridFormat$nLon,
+    bbFormat$nLat == .info$maskList$gridFormat$nLat,
+    bbFormat$lonIncreasing == .info$maskList$gridFormat$lonIncreasing,
+    bbFormat$latIncreasing == .info$maskList$gridFormat$latIncreasing)
+  .info$boundingBoxes <- bb
+  .info$boundingBoxFormat <- bbFormat
 }
 
 

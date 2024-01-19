@@ -2,5 +2,7 @@
   "_class": ["DataDescriptor", "Opts"],
   "name": "nameToReferenceTheVariableBy",
   "setNaToZero": false,
-  "dataVariableName": ""
+  "dataVariableName": "",
+  "blowUpLon": 1,
+  "blowUpLat": 1
 }

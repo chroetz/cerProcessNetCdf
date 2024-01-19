@@ -7,19 +7,14 @@ loadData <- function(dataDescriptor) {
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
 
-  if (hasValue(.info$boundingBoxes)) {
-    # TODO: currently bounding box is only supported when grid formats are identical
-    stopifnot(identical(.info$targetFormat, .info$data[[dataDescriptor$name]]$gridFormat))
-  }
-
   return(invisible())
 }
 
 
 loadDataYearlyFiles <- function(dataDescriptor) {
-  fileNames <- list.files(dataDescriptor$dir, pattern=dataDescriptor$pattern)
+  fileNames <- list.files(dataDescriptor$dirPath, pattern=dataDescriptor$pattern)
   fileYears <- str_match(fileNames, dataDescriptor$pattern)[,2] |> as.integer()
-  filePaths <- file.path(dataDescriptor$dir, fileNames)
+  filePaths <- file.path(dataDescriptor$dirPath, fileNames)
 
   nc <- open.nc(filePaths[1])
   variableName <- ncGetNonDimVariableNames(nc)
@@ -28,6 +23,7 @@ loadDataYearlyFiles <- function(dataDescriptor) {
   }
   stopifnot(length(variableName) == 1)
   gridFormat <- getNativeGridFormatFromNc(nc, variableName)
+  ncInfo <- file.inq.nc(nc)
   cat(
     "Grid format of variable", variableName, ":",
     format(gridFormat),
@@ -38,9 +34,7 @@ loadDataYearlyFiles <- function(dataDescriptor) {
     dim.inq.nc(nc, "lon")$id,
     dim.inq.nc(nc, "lat")$id)
   names(dimIds) <- c("lon", "lat")
-  dimNames <- c(
-    dim.inq.nc(nc, 0)$name,
-    dim.inq.nc(nc, 1)$name)
+  dimNames <- sapply(seq_len(ncInfo$ndims)-1, \(dimid) dim.inq.nc(nc, dimid)$name)
   close.nc(nc)
 
   if (!"data" %in% names(.info)) .info$data <- list()
@@ -139,11 +133,20 @@ getDataAll <- function(year, bbInfo = NULL) {
 getData <- function(name, year, bbInfo = NULL) {
 
   dataInfo <- .info$data[[name]]
+
+  if (hasValue(bbInfo)) {
+    bbInfoScaled <- list(
+      min_lon = pmax(1, floor(bbInfo$min_lon / dataInfo$descriptor$blowUpLon)),
+      max_lon = ceiling(bbInfo$max_lon / dataInfo$descriptor$blowUpLon),
+      min_lat = pmax(1, floor(bbInfo$min_lat / dataInfo$descriptor$blowUpLat)),
+      max_lat = ceiling(bbInfo$max_lat / dataInfo$descriptor$blowUpLat))
+  }
+
   subclass <- ConfigOpts::getClassAt(dataInfo$descriptor, 2)
   data <- switch(
     subclass,
-    YearlyFiles = getDataYearlyFiles(dataInfo, year, bbInfo),
-    SingleFile = getDataSingleFile(dataInfo, year, bbInfo),
+    YearlyFiles = getDataYearlyFiles(dataInfo, year, bbInfoScaled),
+    SingleFile = getDataSingleFile(dataInfo, year, bbInfoScaled),
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
 
@@ -157,6 +160,12 @@ getData <- function(name, year, bbInfo = NULL) {
   if (!all(data |> dimnames() |> names() == .info$grid$orderedNames)) {
     data <- t.default(data)
   }
+
+  data <- blowUp(
+    data,
+    dataInfo$descriptor$blowUpLon,
+    dataInfo$descriptor$blowUpLat,
+    bbInfo, bbInfoScaled)
 
   return(data)
 }
@@ -291,5 +300,34 @@ getDataYearsAll <- function() {
   yearsList <- lapply(names(.info$data), getDataYears)
   years <- Reduce(intersect, yearsList)
   return(years)
+}
+
+
+blowUp <- function(x, blowUpLon, blowUpLat, bbInfo, bbInfoScaled) {
+  if (blowUpLon == 1 && blowUpLat == 1) return(x)
+  stopifnot(is.matrix(x))
+  dimNamesNames <- names(dimnames(x))
+  stopifnot(length(dimNamesNames) == 2)
+
+  lonOffset <- bbInfo$min_lon - bbInfoScaled$min_lon * blowUpLon
+  lonLength <- bbInfo$max_lon - bbInfo$min_lon + 1
+  lonIdx <- lonOffset + seq_len(lonLength)
+  latOffset <- bbInfo$min_lat - bbInfoScaled$min_lat * blowUpLat
+  latLength <- bbInfo$max_lat - bbInfo$min_lat + 1
+  latIdx <- latOffset + seq_len(latLength)
+
+  if (all(dimNamesNames == c("lon", "lat"))) {
+    xRowBlown <- x[rep(seq_len(nrow(x)), each = blowUpLon), , drop=FALSE]
+    xBlown <- xRowBlown[, rep(seq_len(ncol(x)), each = blowUpLat), drop=FALSE]
+    y <- xBlown[lonIdx, latIdx, drop=FALSE]
+  } else if (all(dimNamesNames == c("lat", "lon"))) {
+    xRowBlown <- x[rep(seq_len(nrow(x)), each = blowUpLat), , drop=FALSE]
+    xBlown <- xRowBlown[, rep(seq_len(ncol(x)), each = blowUpLon), drop=FALSE]
+    y <- xBlown[latIdx, lonIdx, drop=FALSE]
+  } else {
+    stop("Unknown dimnames: ", dimNamesNames)
+  }
+
+  return(y)
 }
 
