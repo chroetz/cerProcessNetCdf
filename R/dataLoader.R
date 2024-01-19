@@ -129,6 +129,13 @@ getDataAll <- function(year, bbInfo = NULL) {
   return(data)
 }
 
+assignDataAll <- function(year, env, bbInfo = NULL) {
+  lapply(
+    names(.info$data),
+    \(name) env[[name]] <- getData(name, year, bbInfo))
+  return(invisible())
+}
+
 
 getData <- function(name, year, bbInfo = NULL) {
 

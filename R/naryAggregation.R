@@ -5,7 +5,7 @@ aggregateNaryMasked <- function(
   maskSumFilePath = NULL,
   boundingBoxFilePath = NULL,
   variableDataDescriptorList,
-  aggregateFunction = \(mask, variables) sum(mask * Reduce(`*`, variables), na.rm=TRUE),
+  aggregateExpression = rlang::expr(sum(mask * Reduce(`*`, lapply(ls(), get)), na.rm=TRUE)),
   outFilePath,
   yearsFilter = NULL,
   regionRegex = NULL,
@@ -25,7 +25,7 @@ aggregateNaryMasked <- function(
   openAndCheckMaskFile(maskFilePath)
   if (hasValueString(boundingBoxFilePath)) readBoundingBoxes(boundingBoxFilePath)
   if (hasValueString(maskSumFilePath)) readMaskSum(maskSumFilePath)
-  for (variableDataDescriptor in variableDataDescriptorList) {
+  for (variableDataDescriptor in variableDataDescriptorList$list) {
     loadData(variableDataDescriptor)
   }
 
@@ -69,16 +69,20 @@ processYearNaryAggregation <- function(year, regionNames) {
     regionNames,
     \(regionName) {
       pt <- proc.time()
+      dataEnv <- rlang::env()
       cat("\tRegion ", regionName, "... ")
       bbInfo <- getSingleBoundingBox(.info$boundingBoxes, regionName)
-      variablesValuesList <- getDataAll(year, bbInfo)
+      assignDataAll(year, dataEnv, bbInfo)
       maskValues <- getMaskValues(regionName, .info$maskList, bbInfo)
       if (hasValue(.info$maskSum)) {
         maskSumValues <- subsetBox(.info$maskSum$maskSum, bbInfo) # TODO respect target format
-        value <- .info$aggregateFunction(maskValues / maskSumValues, variablesValuesList)
+        dataEnv$mask <- maskValues / maskSumValues
       } else {
-        value <- .info$aggregateFunction(maskValues, variablesValuesList)
+        dataEnv$mask <- maskValues
       }
+      value <- rlang::eval_tidy(
+        .info$aggregateExpression,
+        rlang::new_data_mask(dataEnv))
       cat("done after", (proc.time()-pt)[3], "s\n")
       return(value)
     },
