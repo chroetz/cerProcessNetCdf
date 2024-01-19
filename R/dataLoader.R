@@ -320,10 +320,10 @@ blowUp <- function(x, blowUpLon, blowUpLat, bbInfo, bbInfoScaled) {
   dimNamesNames <- names(dimnames(x))
   stopifnot(length(dimNamesNames) == 2)
 
-  lonOffset <- bbInfo$min_lon - bbInfoScaled$min_lon * blowUpLon
+  lonOffset <- bbInfo$min_lon - ((bbInfoScaled$min_lon-1) * blowUpLon + 1)
   lonLength <- bbInfo$max_lon - bbInfo$min_lon + 1
   lonIdx <- lonOffset + seq_len(lonLength)
-  latOffset <- bbInfo$min_lat - bbInfoScaled$min_lat * blowUpLat
+  latOffset <- bbInfo$min_lat - ((bbInfoScaled$min_lat-1) * blowUpLat + 1)
   latLength <- bbInfo$max_lat - bbInfo$min_lat + 1
   latIdx <- latOffset + seq_len(latLength)
 
