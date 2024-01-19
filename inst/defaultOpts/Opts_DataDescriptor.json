@@ -1,3 +1,6 @@
 {
-  "_class": ["DataDescriptor", "Opts"]
+  "_class": ["DataDescriptor", "Opts"],
+  "name": "nameToReferenceTheVariableBy",
+  "setNaToZero": false,
+  "dataVariableName": ""
 }

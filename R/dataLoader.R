@@ -1,31 +1,36 @@
-loadData <- function(name, dataDescriptor, targetVariable=NULL) {
+loadData <- function(dataDescriptor) {
   subclass <- ConfigOpts::getClassAt(dataDescriptor, 2)
   switch(
     subclass,
-    YearlyFiles = loadDataYearlyFiles(name, dataDescriptor, targetVariable),
-    SingleFile = loadDataSingleFile(name, dataDescriptor, targetVariable),
+    YearlyFiles = loadDataYearlyFiles(dataDescriptor),
+    SingleFile = loadDataSingleFile(dataDescriptor),
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
+
+  if (hasValue(.info$boundingBoxes)) {
+    # TODO: currently bounding box is only supported when grid formats are identical
+    stopifnot(identical(.info$targetFormat, .info$data[[dataDescriptor$name]]$gridFormat))
+  }
+
   return(invisible())
 }
 
 
-loadDataYearlyFiles <- function(name, dataDescriptor, targetVariable = NULL) {
+loadDataYearlyFiles <- function(dataDescriptor) {
   fileNames <- list.files(dataDescriptor$dir, pattern=dataDescriptor$pattern)
-  fileYears <- stringr::str_match(fileNames, dataDescriptor$pattern)[,2] |> as.integer()
+  fileYears <- str_match(fileNames, dataDescriptor$pattern)[,2] |> as.integer()
   filePaths <- file.path(dataDescriptor$dir, fileNames)
-
-  lonLatCheck <- checkLonLatInNcFile(filePaths[1])
 
   nc <- open.nc(filePaths[1])
   variableName <- ncGetNonDimVariableNames(nc)
-  if (hasValue(targetVariable)) {
-    variableName <- intersect(variableName, targetVariable)
+  if (hasValueString(dataDescriptor$dataVariableName)) {
+    variableName <- intersect(variableName, dataDescriptor$dataVariableName)
   }
   stopifnot(length(variableName) == 1)
+  gridFormat <- getNativeGridFormatFromNc(nc, variableName)
   cat(
     "Grid format of variable", variableName, ":",
-    format(getNativeGridFormatFromNc(nc, variableName)),
+    format(gridFormat),
     "\n")
   varInfo <- var.inq.nc(nc, variableName)
   varDimIds <- varInfo$dimids
@@ -39,28 +44,25 @@ loadDataYearlyFiles <- function(name, dataDescriptor, targetVariable = NULL) {
   close.nc(nc)
 
   if (!"data" %in% names(.info)) .info$data <- list()
-  .info$data[[name]] <- list(
-    name = name,
-    descriptor = dataDescriptor,
-    lonIncreasing = lonLatCheck$lonIncreasing,
-    latIncreasing = lonLatCheck$latIncreasing,
-    years = fileYears,
-    variableName = variableName,
-    dimIds = dimIds,
-    dimNames = dimNames,
-    varDimIds = varDimIds,
-    meta = tibble(
-      year = fileYears,
-      name = fileNames,
-      path = filePaths))
+  .info$data[[dataDescriptor$name]] <- lst(
+      descriptor = dataDescriptor,
+      gridFormat,
+      years = fileYears,
+      variableName,
+      dimIds,
+      dimNames,
+      varDimIds,
+      meta = tibble(
+        year = fileYears,
+        name = fileNames,
+        path = filePaths))
 }
 
 
-loadDataSingleFile <- function(name, dataDescriptor, targetVariable = NULL) {
-
-  lonLatCheck <- checkLonLatInNcFile(dataDescriptor$filePath)
+loadDataSingleFile <- function(dataDescriptor) {
 
   nc <- open.nc(dataDescriptor$filePath)
+  on.exit(close.nc(nc))
 
   dimNames <- ncGetDimensionNames(nc)
   timeDimName <- setdiff(dimNames, c("lon", "lat"))
@@ -74,8 +76,8 @@ loadDataSingleFile <- function(name, dataDescriptor, targetVariable = NULL) {
   if ("units" %in% attNames) {
     timeUnitDescription <- att.get.nc(nc, timeDimName, "units")
     pattern <- "^days since ([\\d-]+)( \\d{2}:\\d{2}:(\\d{2})?)?"
-    stopifnot(stringr::str_detect(timeUnitDescription, pattern))
-    startDayText <- stringr::str_match(timeUnitDescription, pattern)[,2]
+    stopifnot(str_detect(timeUnitDescription, pattern))
+    startDayText <- str_match(timeUnitDescription, pattern)[,2]
     startDate <- as.Date(startDayText)
     startYear <- lubridate::year(startDate)
     years <- timeValues/365 + startYear
@@ -88,13 +90,14 @@ loadDataSingleFile <- function(name, dataDescriptor, targetVariable = NULL) {
   }
 
   variableName <- ncGetNonDimVariableNames(nc)
-  if (hasValue(targetVariable)) {
-    variableName <- intersect(variableName, targetVariable)
+  if (hasValueString(dataDescriptor$dataVariableName)) {
+    variableName <- intersect(variableName, dataDescriptor$dataVariableName)
   }
   stopifnot(length(variableName) == 1)
+  gridFormat <- getNativeGridFormatFromNc(nc, variableName)
   cat(
     "Grid format of variable", variableName, ":",
-    format(getNativeGridFormatFromNc(nc, variableName)),
+    format(gridFormat),
     "\n")
 
   varInfo <- var.inq.nc(nc, variableName)
@@ -109,63 +112,46 @@ loadDataSingleFile <- function(name, dataDescriptor, targetVariable = NULL) {
     dim.inq.nc(nc, 1)$name,
     dim.inq.nc(nc, 2)$name)
 
-  close.nc(nc)
-
   stopifnot(max(abs(years - round(years))) < sqrt(.Machine$double.eps))
 
   if (!"data" %in% names(.info)) .info$data <- list()
-  .info$data[[name]] <- list(
-    name = name,
+  .info$data[[dataDescriptor$name]] <- lst(
     descriptor = dataDescriptor,
-    lonIncreasing = lonLatCheck$lonIncreasing,
-    latIncreasing = lonLatCheck$latIncreasing,
-    years = years,
-    timeDimName = timeDimName,
-    variableName = variableName,
-    dimIds = dimIds,
-    dimNames = dimNames,
-    varDimIds = varDimIds,
-    filePath = dataDescriptor$filePath)
+    years,
+    timeDimName,
+    variableName,
+    dimIds,
+    dimNames,
+    varDimIds,
+    gridFormat)
 }
 
 
-checkLonLatInNcFile <- function(filePath) {
-  nc <- open.nc(filePath)
-  dimNames <- ncGetDimensionNames(nc)
-  stopifnot(c("lon", "lat") %in% dimNames)
-  lonValues <- var.get.nc(nc, "lon")
-  latValues <- var.get.nc(nc, "lat")
-  close.nc(nc)
-  if (all(diff(lonValues) > 0)) lonIncreasing <- TRUE
-  else if (all(diff(lonValues) < 0)) lonIncreasing <- FALSE
-  else stop("Longitude values are neither increasing nor decreasing.")
-  if (all(diff(latValues) > 0)) latIncreasing <- TRUE
-  else if (all(diff(latValues) < 0)) latIncreasing <- FALSE
-  else stop("Latitude values are neither increasing nor decreasing.")
-  assertLonLat(
-    if (lonIncreasing) lonValues else rev(lonValues),
-    if (latIncreasing) latValues else rev(latValues))
-  return(lst(lonIncreasing, latIncreasing))
+getDataAll <- function(year, bbInfo = NULL) {
+  data <- lapply(
+    names(.info$data),
+    \(name) getData(name, year, bbInfo))
+  names(data) <- names(.info$data)
+  return(data)
 }
 
 
-getData <- function(name, year, setNaToZero = FALSE) {
+getData <- function(name, year, bbInfo = NULL) {
 
   dataInfo <- .info$data[[name]]
-  dataDescriptor <- dataInfo$descriptor
-  subclass <- ConfigOpts::getClassAt(dataDescriptor, 2)
+  subclass <- ConfigOpts::getClassAt(dataInfo$descriptor, 2)
   data <- switch(
     subclass,
-    YearlyFiles = getDataYearlyFiles(dataInfo, year, setNaToZero),
-    SingleFile = getDataSingleFile(dataInfo, year, setNaToZero),
+    YearlyFiles = getDataYearlyFiles(dataInfo, year, bbInfo),
+    SingleFile = getDataSingleFile(dataInfo, year, bbInfo),
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
 
-  # Make sure that lon and lat are increasing
-  if (dataInfo$lonIncreasing != .info$grid$lonIncreasing) {
+  # Make sure that lon and lat are correctly ordered
+  if (dataInfo$gridFormat$lonIncreasing != .info$grid$lonIncreasing) {
     data <- reverseArrayDim(data, which(dimnames(data) |> names() == "lon"))
   }
-  if (dataInfo$latIncreasing != .info$grid$latIncreasing) {
+  if (dataInfo$gridFormat$latIncreasing != .info$grid$latIncreasing) {
     data <- reverseArrayDim(data, which(dimnames(data) |> names() == "lat"))
   }
   if (!all(data |> dimnames() |> names() == .info$grid$orderedNames)) {
@@ -176,16 +162,35 @@ getData <- function(name, year, setNaToZero = FALSE) {
 }
 
 
-getDataYearlyFiles <- function(dataInfo, year, setNaToZero = FALSE) {
+getDataYearlyFiles <- function(dataInfo, year, bbInfo = NULL) {
 
   fileInfo <- dataInfo$meta |> filter(.data$year == .env$year)
   stopifnot(nrow(fileInfo) == 1)
 
+  if (hasValue(bbInfo)) {
+    # TODO: convert bbox format to data format
+    lonLatStart <- c(
+      bbInfo$min_lon,
+      bbInfo$min_lat)
+    lonLatCount <- c(
+      bbInfo$max_lon - bbInfo$min_lon + 1,
+      bbInfo$max_lat - bbInfo$min_lat + 1)
+  } else {
+    lonLatStart <- c(1, 1)
+    lonLatCount <- c(NA, NA)
+  }
+  start <- permuteDimIdsLonLat(dataInfo, lonLatStart)
+  count <- permuteDimIdsLonLat(dataInfo, lonLatCount)
+
   nc <- open.nc(fileInfo$path)
-  data <- var.get.nc(nc, dataInfo$variableName)
+  data <- var.get.nc(
+    nc,
+    dataInfo$variableName,
+    start = start,
+    count = count)
   close.nc(nc)
 
-  if (setNaToZero) {
+  if (dataInfo$descriptor$setNaToZero) {
     data <- ifelse(is.na(data), 0, data)
   }
 
@@ -200,16 +205,28 @@ getDataYearlyFiles <- function(dataInfo, year, setNaToZero = FALSE) {
 }
 
 
-getDataSingleFile <- function(dataInfo, year, setNaToZero = FALSE) {
+getDataSingleFile <- function(dataInfo, year, bbInfo = NULL) {
 
   timeIdx <- which(dataInfo$years == year)
 
-  lonLatTimeStart <- c(1, 1, timeIdx)
-  lonLatTimeCount <- c(NA, NA, 1)
-  start <- permuteDimIds(dataInfo, lonLatTimeStart)
-  count <- permuteDimIds(dataInfo, lonLatTimeCount)
+  if (hasValue(bbInfo)) {
+    # TODO: convert bbox format to data format
+    lonLatTimeStart <- c(
+      bbInfo$min_lon,
+      bbInfo$min_lat,
+      timeIdx)
+    lonLatTimeCount <- c(
+      bbInfo$max_lon - bbInfo$min_lon + 1,
+      bbInfo$max_lat - bbInfo$min_lat + 1,
+      1)
+  } else {
+    lonLatTimeStart <- c(1, 1, timeIdx)
+    lonLatTimeCount <- c(NA, NA, 1)
+  }
+  start <- permuteDimIdsLonLatTime(dataInfo, lonLatTimeStart)
+  count <- permuteDimIdsLonLatTime(dataInfo, lonLatTimeCount)
 
-  nc <- open.nc(dataInfo$filePath)
+  nc <- open.nc(dataInfo$descriptor$filePath)
 
   data <- var.get.nc(
     nc,
@@ -219,7 +236,7 @@ getDataSingleFile <- function(dataInfo, year, setNaToZero = FALSE) {
   )
   close.nc(nc)
 
-  if (setNaToZero) {
+  if (dataInfo$descriptor$setNaToZero) {
     data <- ifelse(is.na(data), 0, data)
   }
 
@@ -231,6 +248,26 @@ getDataSingleFile <- function(dataInfo, year, setNaToZero = FALSE) {
   dimnames(data) <- dimNameList
 
   return(data)
+}
+
+
+permuteDimIdsLonLatTime <- function(dataInfo, lonLatTimeVec) {
+  if (is.null(names(lonLatTimeVec))) {
+    names(lonLatTimeVec) <- c("lon", "lat", dataInfo$timeDimName)
+  }
+  permuter <- dataInfo$dimNames[dataInfo$varDimIds+1]
+  permutedVec <- lonLatTimeVec[permuter]
+  return(permutedVec)
+}
+
+
+permuteDimIdsLonLat <- function(dataInfo, lonLatVec) {
+  if (is.null(names(lonLatVec))) {
+    names(lonLatVec) <- c("lon", "lat")
+  }
+  permuter <- dataInfo$dimNames[dataInfo$varDimIds+1]
+  permutedVec <- lonLatVec[permuter]
+  return(permutedVec)
 }
 
 
@@ -247,5 +284,12 @@ permuteDimIds <- function(dataInfo, lonLatTimeVec) {
 getDataYears <- function(name) {
   dataInfo <- .info$data[[name]]
   return(dataInfo$years)
+}
+
+
+getDataYearsAll <- function() {
+  yearsList <- lapply(names(.info$data), getDataYears)
+  years <- Reduce(intersect, yearsList)
+  return(years)
 }
 
