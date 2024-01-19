@@ -203,7 +203,8 @@ getDataYearlyFiles <- function(dataInfo, year, bbInfo = NULL) {
     nc,
     dataInfo$variableName,
     start = start,
-    count = count)
+    count = count,
+    collapse = FALSE)
   close.nc(nc)
 
   if (dataInfo$descriptor$setNaToZero) {
@@ -248,7 +249,8 @@ getDataSingleFile <- function(dataInfo, year, bbInfo = NULL) {
     nc,
     dataInfo$variableName,
     start = start,
-    count = count
+    count = count,
+    collapse = FALSE
   )
   close.nc(nc)
 
@@ -258,9 +260,11 @@ getDataSingleFile <- function(dataInfo, year, bbInfo = NULL) {
 
   # Set correct dimnames of data
   dimNames <- dataInfo$dimNames[dataInfo$varDimIds+1]
-  dimNames <- dimNames[dimNames %in% c("lon", "lat")]
+  dimSel <- dimNames %in% c("lon", "lat")
+  dimNames <- dimNames[dimSel]
   dimNameList <- list(NULL, NULL)
   names(dimNameList) <- dimNames
+  dim(data) <- dim(data)[dimSel]
   dimnames(data) <- dimNameList
 
   return(data)
