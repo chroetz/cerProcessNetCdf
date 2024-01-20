@@ -138,41 +138,6 @@ loadDataSingleFile <- function(dataDescriptor) {
 }
 
 
-getInfo <- function(name, year) {
-  dataInfo <- .info$data[[name]]
-  descriptor <- dataInfo$descriptor
-  subclass <- ConfigOpts::getClassAt(descriptor, 2)
-  switch(
-    subclass,
-    YearlyFiles = getInfoYearlyFiles(name, year),
-    SingleFile = getInfoSingleFile(name, year),
-    stop("Unknown DataDescriptor subclass: ", subclass)
-  )
-}
-
-
-getInfoYearlyFiles <- function(name, year) {
-  dataInfo <- .info$data[[name]]
-  fileInfo <-
-    dataInfo$meta |>
-    filter(.data$year == .env$year) |>
-    rename(filePath = .data$path) |>
-    mutate(name = .env$name) |>
-    select(name, year, .data$filePath)
-  return(fileInfo)
-}
-
-
-getInfoSingleFile <- function(name, year) {
-  dataInfo <- .info$data[[name]]
-  fileInfo <- tibble(
-    name = name,
-    year = year,
-    filePath = dataInfo$descriptor$filePath)
-  return(fileInfo)
-}
-
-
 getDataAll <- function(year, label = NULL, bbInfo = NULL) {
   data <- lapply(
     names(.info$data),
@@ -239,12 +204,9 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
 
 getDataYearlyFiles <- function(dataInfo, year, label, bbInfo = NULL) {
 
-  # TODO: seems like this is a little slow...
-  info <-
-    dataInfo$meta |>
-    filter(
-      .data$year == .env$year,
-      .data$label == .env$label)
+  # NOTE: using filter() here seems a bit slow
+  sel <- dataInfo$meta$year == year & dataInfo$meta$label == label
+  info <- dataInfo$meta[sel,]
   stopifnot(nrow(info) == 1)
 
   if (hasValue(bbInfo)) {

@@ -7,7 +7,6 @@ aggregateNaryMasked <- function(
   variableDataDescriptorList,
   aggregateExpression,
   outFilePath,
-  outMetaFilePath = str_replace(outFilePath, "\\.csv$", "_meta.csv"),
   yearsFilter = NULL,
   regionRegex = NULL,
   nBatches = 1,
@@ -44,10 +43,6 @@ aggregateNaryMasked <- function(
   if (file.exists(.info$outFilePath)) {
     cat(.info$outFilePath, "already exists. Deleting.\n")
     file.remove(.info$outFilePath)
-  }
-  if (file.exists(.info$outMetaFilePath)) {
-    cat(.info$outMetaFilePath, "already exists. Deleting.\n")
-    file.remove(.info$outMetaFilePath)
   }
 
   cat("Start main loop.\n")
