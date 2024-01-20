@@ -1,5 +1,6 @@
 {
   "_class": ["YearlyFiles", "DataDescriptor", "Opts"],
   "dirPath": "path/to/dir",
-  "pattern": "fileRegex"
+  "pattern": "fileRegex",
+  "recursive": false
 }

@@ -12,9 +12,15 @@ loadData <- function(dataDescriptor) {
 
 
 loadDataYearlyFiles <- function(dataDescriptor) {
-  fileNames <- list.files(dataDescriptor$dirPath, pattern=dataDescriptor$pattern)
-  fileYears <- str_match(fileNames, dataDescriptor$pattern)[,2] |> as.integer()
-  filePaths <- file.path(dataDescriptor$dirPath, fileNames)
+  filePaths <- list.files(
+    dataDescriptor$dirPath,
+    pattern = dataDescriptor$pattern,
+    recursive = dataDescriptor$recursive,
+    full.names = TRUE)
+  fileNames <- basename(filePaths)
+  matchMatrix <- str_match(fileNames, dataDescriptor$pattern)
+  # Assume that the last capture group is the year
+  fileYears <- matchMatrix[,ncol(matchMatrix)] |> as.integer()
 
   nc <- open.nc(filePaths[1])
   variableName <- ncGetNonDimVariableNames(nc)
@@ -118,6 +124,41 @@ loadDataSingleFile <- function(dataDescriptor) {
     dimNames,
     varDimIds,
     gridFormat)
+}
+
+
+getInfo <- function(name, year) {
+  dataInfo <- .info$data[[name]]
+  descriptor <- dataInfo$descriptor
+  subclass <- ConfigOpts::getClassAt(descriptor, 2)
+  switch(
+    subclass,
+    YearlyFiles = getInfoYearlyFiles(name, year),
+    SingleFile = getInfoSingleFile(name, year),
+    stop("Unknown DataDescriptor subclass: ", subclass)
+  )
+}
+
+
+getInfoYearlyFiles <- function(name, year) {
+  dataInfo <- .info$data[[name]]
+  fileInfo <-
+    dataInfo$meta |>
+    filter(.data$year == .env$year) |>
+    rename(filePath = path) |>
+    mutate(name = name) |>
+    select(name, year, filePath)
+  return(fileInfo)
+}
+
+
+getInfoSingleFile <- function(name, year) {
+  dataInfo <- .info$data[[name]]
+  fileInfo <- tibble(
+    name = name,
+    year = year,
+    filePath = dataInfo$descriptor$filePath)
+  return(fileInfo)
 }
 
 

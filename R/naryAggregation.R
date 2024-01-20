@@ -7,6 +7,7 @@ aggregateNaryMasked <- function(
   variableDataDescriptorList,
   aggregateExpression = rlang::expr(sum(mask * Reduce(`*`, lapply(ls(), get)), na.rm=TRUE)),
   outFilePath,
+  outMetaFilePath = str_replace(outFilePath, "\\.csv$", "_meta.csv"),
   yearsFilter = NULL,
   regionRegex = NULL,
   nBatches = 1,
@@ -48,6 +49,10 @@ aggregateNaryMasked <- function(
   if (file.exists(.info$outFilePath)) {
     cat(.info$outFilePath, "already exists. Deleting.\n")
     file.remove(.info$outFilePath)
+  }
+  if (file.exists(.info$outMetaFilePath)) {
+    cat(.info$outMetaFilePath, "already exists. Deleting.\n")
+    file.remove(.info$outMetaFilePath)
   }
 
   cat("Start main loop.\n")
@@ -97,5 +102,16 @@ processYearNaryAggregation <- function(year, regionNames) {
     .info$outFilePath,
     append = TRUE,
     col_names = !file.exists(.info$outFilePath))
+  writeInfo(
+    year,
+    .info$outMetaFilePath,
+    append = TRUE,
+    col_names = !file.exists(.info$outMetaFilePath))
   cat("Year", year, "done after", (proc.time()-ptYear)[3], "s\n")
+}
+
+
+writeInfo <- function(year, outFilePath, ...) {
+  meta <- lapply(names(.info$data), getInfo, year = year) |> bind_rows()
+  readr::write_csv(meta, outFilePath, ...)
 }
