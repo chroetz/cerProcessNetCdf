@@ -1,4 +1,5 @@
 {
   "_class": ["SingleFile", "DataDescriptor", "Opts"],
-  "filePath": "path/to/file"
+  "filePath": "path/to/file",
+  "dataVariableNames": null
 }

@@ -5,7 +5,7 @@ aggregateNaryMasked <- function(
   maskSumFilePath = NULL,
   boundingBoxFilePath = NULL,
   variableDataDescriptorList,
-  aggregateExpression = rlang::expr(sum(mask * Reduce(`*`, lapply(ls(), get)), na.rm=TRUE)),
+  aggregateExpression,
   outFilePath,
   outMetaFilePath = str_replace(outFilePath, "\\.csv$", "_meta.csv"),
   yearsFilter = NULL,
@@ -30,21 +30,16 @@ aggregateNaryMasked <- function(
     loadData(variableDataDescriptor)
   }
 
-  years <- getDataYearsAll()
-  if (hasValue(yearsFilter)) years <- intersect(years, yearsFilter)
-  cat(
-    length(years),
-    "years to process in total, from",
-    min(years),
-    "to",
-    max(years),
-    "\n")
-
   regionNames <- .info$maskList$regionNames
   if (hasValue(regionRegex)) regionNames <- str_subset(regionNames, regionRegex)
   cat(length(regionNames), "regions to process.\n")
 
-  batch <- EbmUtility::splitAndGetOneBatch("years", years, nBatches, batchIndex)
+  labelsAndYears <- getDataLabelsAndYearsAll(yearsFilter)
+  batch <- EbmUtility::splitAndGetOneBatch(
+    "label-year-combinations",
+    seq_len(nrow(labelsAndYears)),
+    nBatches,
+    batchIndex)
 
   if (file.exists(.info$outFilePath)) {
     cat(.info$outFilePath, "already exists. Deleting.\n")
@@ -56,8 +51,10 @@ aggregateNaryMasked <- function(
   }
 
   cat("Start main loop.\n")
-  for (year in batch) {
-    processYearNaryAggregation(year, regionNames)
+  for (idx in batch) {
+    labelsAndYear <- labelsAndYears[idx, ] |> as.list()
+    labels <- labelsAndYear[-which(names(labelsAndYear) == "year")]
+    processYearNaryAggregation(labels, labelsAndYear$year, regionNames)
   }
   cat("End main loop.\n")
 
@@ -67,8 +64,8 @@ aggregateNaryMasked <- function(
 }
 
 
-processYearNaryAggregation <- function(year, regionNames) {
-  cat("Processing year", year, "\n")
+processYearNaryAggregation <- function(labels, year, regionNames) {
+  cat("Processing labels", paste(labels, collapse=", "), "and year", year, "\n")
   ptYear <- proc.time()
   values <- vapply(
     regionNames,
@@ -77,7 +74,7 @@ processYearNaryAggregation <- function(year, regionNames) {
       dataEnv <- rlang::env()
       cat("\tRegion ", regionName, "... ")
       bbInfo <- getSingleBoundingBox(.info$boundingBoxes, regionName)
-      assignDataAll(year, dataEnv, bbInfo)
+      assignDataAll(year, labels, dataEnv, bbInfo)
       maskValues <- getMaskValues(regionName, .info$maskList, bbInfo)
       if (hasValue(.info$maskSum)) {
         maskSumValues <- subsetBox(.info$maskSum$maskSum, bbInfo) # TODO respect target format
@@ -93,25 +90,15 @@ processYearNaryAggregation <- function(year, regionNames) {
     },
     double(1))
   result <- tibble(
+    label = label,
     year = year,
     region = regionNames,
     value = values)
-  cat("Write year", year, "values to file", .info$outFilePath, "\n")
+  cat("Write values to file", .info$outFilePath, "\n")
   readr::write_csv(
     result,
     .info$outFilePath,
     append = TRUE,
     col_names = !file.exists(.info$outFilePath))
-  writeInfo(
-    year,
-    .info$outMetaFilePath,
-    append = TRUE,
-    col_names = !file.exists(.info$outMetaFilePath))
   cat("Year", year, "done after", (proc.time()-ptYear)[3], "s\n")
-}
-
-
-writeInfo <- function(year, outFilePath, ...) {
-  meta <- lapply(names(.info$data), getInfo, year = year) |> bind_rows()
-  readr::write_csv(meta, outFilePath, ...)
 }

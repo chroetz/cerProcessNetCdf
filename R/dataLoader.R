@@ -21,6 +21,12 @@ loadDataYearlyFiles <- function(dataDescriptor) {
   matchMatrix <- str_match(fileNames, dataDescriptor$pattern)
   # Assume that the last capture group is the year
   fileYears <- matchMatrix[,ncol(matchMatrix)] |> as.integer()
+  if (ncol(matchMatrix) == 2) {
+    fileLabels <- EbmUtility::longestCommonPrefix(fileNames)
+  } else {
+    labelParts <- matchMatrix[,2:(ncol(matchMatrix)-1)]
+    fileLabels <- apply(labelParts, 1, paste, collapse="_")
+  }
 
   nc <- open.nc(filePaths[1])
   variableName <- ncGetNonDimVariableNames(nc)
@@ -47,15 +53,17 @@ loadDataYearlyFiles <- function(dataDescriptor) {
   .info$data[[dataDescriptor$name]] <- lst(
       descriptor = dataDescriptor,
       gridFormat,
-      years = fileYears,
+      years = unique(fileYears),
+      label = unique(fileLabels),
       variableName,
       dimIds,
       dimNames,
       varDimIds,
       meta = tibble(
+        label = fileLabels,
         year = fileYears,
-        name = fileNames,
-        path = filePaths))
+        fileName = fileNames,
+        filePath = filePaths))
 }
 
 
@@ -67,7 +75,7 @@ loadDataSingleFile <- function(dataDescriptor) {
   dimNames <- ncGetDimensionNames(nc)
   timeDimName <- setdiff(dimNames, c("lon", "lat"))
   stopifnot(length(timeDimName) == 1)
-  timeValues <- var.get.nc(nc, timeDimName)
+  timeValues <- var.get.nc(nc, timeDimName) |> as.vector()
   timeVarInfo <- var.inq.nc(nc, timeDimName)
 
   attNames <- sapply(
@@ -89,18 +97,20 @@ loadDataSingleFile <- function(dataDescriptor) {
     cat("Assume that time values are years.\n")
   }
 
-  variableName <- ncGetNonDimVariableNames(nc)
-  if (hasValueString(dataDescriptor$dataVariableName)) {
-    variableName <- intersect(variableName, dataDescriptor$dataVariableName)
+  labels <- ncGetNonDimVariableNames(nc)
+  if (hasValueString(dataDescriptor$dataVariableNames)) {
+    labels <- intersect(labels, dataDescriptor$dataVariableNames)
   }
-  stopifnot(length(variableName) == 1)
-  gridFormat <- getNativeGridFormatFromNc(nc, variableName)
+  gridFormat <- getNativeGridFormatFromNc(nc, labels[1])
   cat(
-    "Grid format of variable", variableName, ":",
+    "Grid format of variable", labels[1], ":",
     format(gridFormat),
     "\n")
+  if (length(labels) > 1) {
+    cat("WARNING: Found more than one variable in file. Assume they all have the same grid format\n")
+  }
 
-  varInfo <- var.inq.nc(nc, variableName)
+  varInfo <- var.inq.nc(nc, labels[1])
   varDimIds <- varInfo$dimids
   dimIds <- c(
     dim.inq.nc(nc, "lon")$id,
@@ -117,13 +127,14 @@ loadDataSingleFile <- function(dataDescriptor) {
   if (!"data" %in% names(.info)) .info$data <- list()
   .info$data[[dataDescriptor$name]] <- lst(
     descriptor = dataDescriptor,
+    gridFormat,
     years,
+    labels,
     timeDimName,
-    variableName,
     dimIds,
     dimNames,
     varDimIds,
-    gridFormat)
+    meta = tidyr::expand_grid(label = labels, year = years))
 }
 
 
@@ -145,9 +156,9 @@ getInfoYearlyFiles <- function(name, year) {
   fileInfo <-
     dataInfo$meta |>
     filter(.data$year == .env$year) |>
-    rename(filePath = path) |>
-    mutate(name = name) |>
-    select(name, year, filePath)
+    rename(filePath = .data$path) |>
+    mutate(name = .env$name) |>
+    select(name, year, .data$filePath)
   return(fileInfo)
 }
 
@@ -162,25 +173,30 @@ getInfoSingleFile <- function(name, year) {
 }
 
 
-getDataAll <- function(year, bbInfo = NULL) {
+getDataAll <- function(year, label = NULL, bbInfo = NULL) {
   data <- lapply(
     names(.info$data),
-    \(name) getData(name, year, bbInfo))
+    \(name) getData(name, year, label, bbInfo))
   names(data) <- names(.info$data)
   return(data)
 }
 
-assignDataAll <- function(year, env, bbInfo = NULL) {
+assignDataAll <- function(year, labels, env, bbInfo = NULL) {
   lapply(
     names(.info$data),
-    \(name) env[[name]] <- getData(name, year, bbInfo))
+    \(name) env[[name]] <- getData(name, year, labels[[name]], bbInfo))
   return(invisible())
 }
 
 
-getData <- function(name, year, bbInfo = NULL) {
+getData <- function(name, year, label = NULL, bbInfo = NULL) {
 
   dataInfo <- .info$data[[name]]
+
+  if(!hasValue(label)) {
+    label <- dataInfo$labels
+  }
+  stopifnot(length(label) == 1)
 
   if (hasValue(bbInfo)) {
     bbInfoScaled <- list(
@@ -188,13 +204,15 @@ getData <- function(name, year, bbInfo = NULL) {
       max_lon = ceiling(bbInfo$max_lon / dataInfo$descriptor$blowUpLon),
       min_lat = pmax(1, floor(bbInfo$min_lat / dataInfo$descriptor$blowUpLat)),
       max_lat = ceiling(bbInfo$max_lat / dataInfo$descriptor$blowUpLat))
+  } else {
+    bbInfoScaled <- NULL
   }
 
   subclass <- ConfigOpts::getClassAt(dataInfo$descriptor, 2)
   data <- switch(
     subclass,
-    YearlyFiles = getDataYearlyFiles(dataInfo, year, bbInfoScaled),
-    SingleFile = getDataSingleFile(dataInfo, year, bbInfoScaled),
+    YearlyFiles = getDataYearlyFiles(dataInfo, year, label, bbInfoScaled),
+    SingleFile = getDataSingleFile(dataInfo, year, label, bbInfoScaled),
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
 
@@ -219,10 +237,14 @@ getData <- function(name, year, bbInfo = NULL) {
 }
 
 
-getDataYearlyFiles <- function(dataInfo, year, bbInfo = NULL) {
+getDataYearlyFiles <- function(dataInfo, year, label, bbInfo = NULL) {
 
-  fileInfo <- dataInfo$meta |> filter(.data$year == .env$year)
-  stopifnot(nrow(fileInfo) == 1)
+  info <-
+    dataInfo$meta |>
+    filter(
+      .data$year == .env$year,
+      .data$label == .env$label)
+  stopifnot(nrow(info) == 1)
 
   if (hasValue(bbInfo)) {
     # TODO: convert bbox format to data format
@@ -239,7 +261,7 @@ getDataYearlyFiles <- function(dataInfo, year, bbInfo = NULL) {
   start <- permuteDimIdsLonLat(dataInfo, lonLatStart)
   count <- permuteDimIdsLonLat(dataInfo, lonLatCount)
 
-  nc <- open.nc(fileInfo$path)
+  nc <- open.nc(info$filePath)
   data <- var.get.nc(
     nc,
     dataInfo$variableName,
@@ -263,7 +285,7 @@ getDataYearlyFiles <- function(dataInfo, year, bbInfo = NULL) {
 }
 
 
-getDataSingleFile <- function(dataInfo, year, bbInfo = NULL) {
+getDataSingleFile <- function(dataInfo, year, label, bbInfo = NULL) {
 
   timeIdx <- which(dataInfo$years == year)
 
@@ -288,7 +310,7 @@ getDataSingleFile <- function(dataInfo, year, bbInfo = NULL) {
 
   data <- var.get.nc(
     nc,
-    dataInfo$variableName,
+    label,
     start = start,
     count = count,
     collapse = FALSE
@@ -352,6 +374,32 @@ getDataYearsAll <- function() {
   yearsList <- lapply(names(.info$data), getDataYears)
   years <- Reduce(intersect, yearsList)
   return(years)
+}
+
+
+getDataLabelsAndYearsAll <- function(yearsFilter) {
+  nms <- names(.info$data)
+  labelsAndYearsList <- lapply(nms, getDataLabelsAndYears, yearsFilter)
+  names(labelsAndYearsList) <- nms
+  for (nm in nms) {
+    names(labelsAndYearsList[[nm]])[names(labelsAndYearsList[[nm]]) == "label"] <- nm
+  }
+  labelsAndYears <- labelsAndYearsList |> first()
+  for (nm in nms[-1]) {
+    labelsAndYears <- inner_join(labelsAndYears, labelsAndYearsList[[nm]], join_by(year))
+  }
+  return(labelsAndYears)
+}
+
+
+getDataLabelsAndYears <- function(name, yearsFilter) {
+  labelsAndYears <-
+    .info$data[[name]]$meta |>
+    select(.data$label, .data$year)
+  if (hasValue(yearsFilter)) {
+    labelsAndYears <- filter(labelsAndYears, .data$year %in% yearsFilter)
+  }
+  return(labelsAndYears)
 }
 
 

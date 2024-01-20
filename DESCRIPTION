@@ -21,6 +21,7 @@ Imports:
     RNetCDF,
     sf,
     stringr,
-    tibble
+    tibble,
+    tidyr
 Suggests: 
     testthat (>= 3.0.0)

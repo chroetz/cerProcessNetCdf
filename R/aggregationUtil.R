@@ -67,8 +67,8 @@ openAndCheckMaskFile <- function(filePath) {
   maskList <- list()
   nc <- open.nc(filePath)
   maskList$nc <- nc
-  maskList$lonValues <- var.get.nc(nc, "lon")
-  maskList$latValues <- var.get.nc(nc, "lat")
+  maskList$lonValues <- var.get.nc(nc, "lon") |> as.vector()
+  maskList$latValues <- var.get.nc(nc, "lat") |> as.vector()
   assertLonLat(maskList$lonValues, rev(maskList$latValues))
   maskList$lonLatIdx <-
     c(lon = ncGetDimensionIndex(nc, "lon"),
@@ -92,7 +92,7 @@ getMaskValues <- function(regionName, maskList, bbInfo = NULL) {
       count = c(bbInfo$max_lon - bbInfo$min_lon + 1, bbInfo$max_lat - bbInfo$min_lat + 1),
       collapse = FALSE)
   } else {
-    values <- var.get.nc(maskList$nc, regionName)
+    values <- var.get.nc(maskList$nc, regionName) |> as.vector()
   }
 
   if (any(is.na(values))) {
