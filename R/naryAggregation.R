@@ -97,5 +97,8 @@ processYearNaryAggregation <- function(labels, year, regionNames) {
     .info$outFilePath,
     append = TRUE,
     col_names = !file.exists(.info$outFilePath))
-  cat("Year", year, "done after", (proc.time()-ptYear)[3], "s\n")
+  cat(
+    "Labels", paste(labels, collapse=", "),
+    "and year", year,
+    "done after", (proc.time()-ptYear)[3], "s\n")
 }
