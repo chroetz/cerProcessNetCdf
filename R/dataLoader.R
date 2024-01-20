@@ -239,6 +239,7 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
 
 getDataYearlyFiles <- function(dataInfo, year, label, bbInfo = NULL) {
 
+  # TODO: seems like this is a little slow...
   info <-
     dataInfo$meta |>
     filter(

@@ -89,11 +89,13 @@ processYearNaryAggregation <- function(labels, year, regionNames) {
       return(value)
     },
     double(1))
-  result <- tibble(
-    label = label,
-    year = year,
-    region = regionNames,
-    value = values)
+  result <- bind_cols(
+    as_tibble(labels),
+    tibble(
+      year = year,
+      region = regionNames,
+      value = values)
+  )
   cat("Write values to file", .info$outFilePath, "\n")
   readr::write_csv(
     result,
