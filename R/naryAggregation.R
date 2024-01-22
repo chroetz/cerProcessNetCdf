@@ -5,7 +5,7 @@ aggregateNaryMasked <- function(
   maskSumFilePath = NULL,
   boundingBoxFilePath = NULL,
   variableDataDescriptorList,
-  aggregateExpression,
+  aggregateExpressionList,
   outFilePath,
   yearsFilter = NULL,
   regionRegex = NULL,
@@ -77,19 +77,22 @@ processYearNaryAggregation <- function(labels, year, regionNames) {
       } else {
         dataEnv$mask <- maskValues
       }
-      value <- rlang::eval_tidy(
-        .info$aggregateExpression,
-        rlang::new_data_mask(dataEnv))
+      dataMask <- rlang::new_data_mask(dataEnv)
+      value <- vapply(
+        .info$aggregateExpressionList,
+        rlang::eval_tidy,
+        data = dataMask,
+        double(1))
       cat("done after", (proc.time()-pt)[3], "s\n")
       return(value)
     },
-    double(1))
+    double(length(.info$aggregateExpressionList)))
   result <- bind_cols(
     as_tibble(labels),
     tibble(
       year = year,
-      region = regionNames,
-      value = values)
+      region = regionNames),
+    as_tibble(t(values))
   )
   cat("Write values to file", .info$outFilePath, "\n")
   readr::write_csv(
