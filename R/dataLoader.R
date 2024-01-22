@@ -24,7 +24,7 @@ loadDataYearlyFiles <- function(dataDescriptor) {
   if (ncol(matchMatrix) == 2) {
     fileLabels <- EbmUtility::longestCommonPrefix(fileNames)
   } else {
-    labelParts <- matchMatrix[,2:(ncol(matchMatrix)-1)]
+    labelParts <- matchMatrix[,2:(ncol(matchMatrix)-1), drop=FALSE]
     fileLabels <- apply(labelParts, 1, paste, collapse="_")
   }
 
@@ -164,6 +164,9 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
   stopifnot(length(label) == 1)
 
   if (hasValue(bbInfo)) {
+
+    bbInfo <- convertBoundingBoxLonLatIncrDecr(bbInfo, .info$boundingBoxFormat,  dataInfo$gridFormat)
+
     bbInfoScaled <- list(
       min_lon = pmax(1, floor(bbInfo$min_lon / dataInfo$descriptor$blowUpLon)),
       max_lon = ceiling(bbInfo$max_lon / dataInfo$descriptor$blowUpLon),

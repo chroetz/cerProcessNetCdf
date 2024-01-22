@@ -86,3 +86,17 @@ getBoundingBox <- function(x) {
     colMin = colBoundingIdxs[1],
     colMax = colBoundingIdxs[2]))
 }
+
+
+convertBoundingBoxLonLatIncrDecr <- function(bb, bbGridFormat, tragetGridFormat) {
+  bbOut <- bb
+  if (bbGridFormat$latIncreasing != tragetGridFormat$latIncreasing) {
+    bbOut$min_lat <- bbGridFormat$nLat - bb$max_lat + 1
+    bbOut$max_lat <- bbGridFormat$nLat - bb$min_lat + 1
+  }
+  if (bbGridFormat$lonIncreasing != tragetGridFormat$lonIncreasing) {
+    bbOut$min_lon <- bbGridFormat$nLon - bb$max_lon + 1
+    bbOut$max_lon <- bbGridFormat$nLon - bb$min_lon + 1
+  }
+  return(bbOut)
+}
