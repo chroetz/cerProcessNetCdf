@@ -22,7 +22,7 @@ loadDataYearlyFiles <- function(dataDescriptor) {
   # Assume that the last capture group is the year
   fileYears <- matchMatrix[,ncol(matchMatrix)] |> as.integer()
   if (ncol(matchMatrix) == 2) {
-    fileLabels <- EbmUtility::longestCommonPrefix(fileNames)
+    fileLabels <- cerUtility::longestCommonPrefix(fileNames)
   } else {
     labelParts <- matchMatrix[,2:(ncol(matchMatrix)-1), drop=FALSE]
     fileLabels <- apply(labelParts, 1, paste, collapse="_")

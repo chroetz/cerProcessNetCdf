@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/reference/test_package.html#special-files
 
 library(testthat)
-library(ProcessNetCdf)
+library(cerProcessNetCdf)
 
-test_check("ProcessNetCdf")
+test_check("cerProcessNetCdf")

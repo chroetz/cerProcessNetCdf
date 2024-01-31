@@ -1,5 +1,5 @@
-Package: ProcessNetCdf
-Title: Deal with NetCDF files (formerly EbmNetCdf)
+Package: cerProcessNetCdf
+Title: Deal with NetCDF files
 Version: 0.0.0.9000
 Authors@R: 
     person("Christof", "Schötz", , "math@christof-schoetz.de", role = c("aut", "cre"),
@@ -12,7 +12,7 @@ RoxygenNote: 7.2.3
 Imports: 
     ConfigOpts,
     dplyr,
-    EbmUtility,
+    cerUtility,
     exactextractr,
     lubridate,
     raster,
