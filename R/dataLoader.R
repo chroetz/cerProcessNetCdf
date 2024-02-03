@@ -71,8 +71,7 @@ loadDataMultiFile <- function(dataDescriptor) {
       descriptor = dataDescriptor,
       gridFormat,
       years = years,
-      label = unique(fileLabels),
-      variableName,
+      label = labels,
       timeDimName,
       dimIds,
       dimNames,
@@ -250,6 +249,7 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
   subclass <- ConfigOpts::getClassAt(dataInfo$descriptor, 2)
   data <- switch(
     subclass,
+    MultiFile = getDataMultiFile(dataInfo, year, label, bbInfoScaled),
     YearlyFiles = getDataYearlyFiles(dataInfo, year, label, bbInfoScaled),
     SingleFile = getDataSingleFile(dataInfo, year, label, bbInfoScaled),
     stop("Unknown DataDescriptor subclass: ", subclass)

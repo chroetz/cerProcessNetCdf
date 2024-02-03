@@ -1,7 +1,8 @@
 #' @export
-setupMaskSummation <- function(
+sumMask <- function(
   maskFilePath,
-  outFilePath
+  outFilePath,
+  regionRegex = NULL
 ) {
 
   # put function arguments into environment .info
@@ -17,16 +18,10 @@ setupMaskSummation <- function(
   .info$targetFormat <- gridFormat
   openAndCheckMaskFile(maskFilePath)
 
-  return(invisible())
-}
-
-
-#' @export
-runMaskSummation <- function() {
-
-  pt <- proc.time()
+  ptOuter <- proc.time()
 
   regionNames <- .info$maskList$regionNames
+  if (hasValue(regionRegex)) regionNames <- str_subset(regionNames, regionRegex)
   cat(length(regionNames), "regions to process.\n")
 
   maskScalingValues <- NULL
@@ -46,9 +41,9 @@ runMaskSummation <- function() {
   close.nc(.info$maskList$nc)
   cat("Done.\n")
 
-  cat("getMaskScaling duration:", (proc.time()-pt)[3], "s\n")
+  cat("get maskScalingValues duration:", (proc.time()-ptOuter)[3], "s\n")
 
-  cat("Save mask scaling values ... ")
+  cat("Save maskScalingValues ... ")
   saveNetCdf(
     .info$outFilePath,
     name = "maskSum",
