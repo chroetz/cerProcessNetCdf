@@ -14,6 +14,7 @@ setupMaskSummation <- function(
   gridFormat <- getNativeGridFormatFromFile(maskFilePath)
   initializeGrid(gridFormat)
 
+  .info$targetFormat <- gridFormat
   openAndCheckMaskFile(maskFilePath)
 
   return(invisible())
