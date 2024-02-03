@@ -2,6 +2,7 @@ loadData <- function(dataDescriptor) {
   subclass <- ConfigOpts::getClassAt(dataDescriptor, 2)
   switch(
     subclass,
+    MultiFile = loadDataMultiFile(dataDescriptor),
     YearlyFiles = loadDataYearlyFiles(dataDescriptor),
     SingleFile = loadDataSingleFile(dataDescriptor),
     stop("Unknown DataDescriptor subclass: ", subclass)
@@ -9,6 +10,76 @@ loadData <- function(dataDescriptor) {
 
   return(invisible())
 }
+
+
+loadDataMultiFile <- function(dataDescriptor) {
+
+  filePaths <- list.files(
+    dataDescriptor$dirPath,
+    pattern = dataDescriptor$pattern,
+    recursive = dataDescriptor$recursive,
+    full.names = TRUE)
+  fileNames <- basename(filePaths)
+
+  nc <- open.nc(filePaths[1])
+  labels <- ncGetNonDimVariableNames(nc)
+  if (hasValueString(dataDescriptor$dataVariableNames)) {
+    labels <- intersect(labels, dataDescriptor$dataVariableNames)
+  }
+  gridFormat <- getNativeGridFormatFromNc(nc, labels[1])
+  cat(
+    "Grid format of variable", labels[1], ":",
+    format(gridFormat),
+    "\n")
+  if (length(labels) > 1) {
+    cat("WARNING: Found more than one variable in file. Assume they all have the same grid format\n")
+  }
+
+  dimNames <- ncGetDimensionNames(nc)
+  timeDimName <- setdiff(dimNames, c("lon", "lat"))
+  stopifnot(length(timeDimName) == 1)
+  varInfo <- var.inq.nc(nc, labels[1])
+  varDimIds <- varInfo$dimids
+  dimIds <- c(
+    dim.inq.nc(nc, "lon")$id,
+    dim.inq.nc(nc, "lat")$id,
+    dim.inq.nc(nc, timeDimName)$id)
+  names(dimIds) <- c("lon", "lat", timeDimName)
+  close.nc(nc)
+
+  timeList <- lapply(filePaths, getFileTimes, timeDimName = timeDimName)
+  yearList <- lapply(timeList, \(x) lubridate::year(x) |> unique())
+  times <- unlist(timeList)
+  years <- unlist(yearList)
+  stopifnot(length(times) == length(unique(times)))
+  stopifnot(length(years) == length(unique(years)))
+
+  meta <-
+    cross_join(
+      tibble(
+        label = labels),
+      tibble(
+        year = yearList,
+        fileName = fileNames,
+        filePath = filePaths
+      ) |>
+      tidyr::unnest_longer(year)
+    )
+
+  if (!"data" %in% names(.info)) .info$data <- list()
+  .info$data[[dataDescriptor$name]] <- lst(
+      descriptor = dataDescriptor,
+      gridFormat,
+      years = years,
+      label = unique(fileLabels),
+      variableName,
+      timeDimName,
+      dimIds,
+      dimNames,
+      varDimIds,
+      meta)
+}
+
 
 
 loadDataYearlyFiles <- function(dataDescriptor) {
@@ -184,22 +255,69 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
 
-  # Make sure that lon and lat are correctly ordered
-  if (dataInfo$gridFormat$lonIncreasing != .info$grid$lonIncreasing) {
-    data <- reverseArrayDim(data, which(dimnames(data) |> names() == "lon"))
-  }
-  if (dataInfo$gridFormat$latIncreasing != .info$grid$latIncreasing) {
-    data <- reverseArrayDim(data, which(dimnames(data) |> names() == "lat"))
-  }
-  if (!all(data |> dimnames() |> names() == .info$grid$orderedNames)) {
-    data <- t.default(data)
-  }
+  data <- ensureGridFormat(data, .info$grid, dataInfo$gridFormat)
 
   data <- blowUp(
     data,
     dataInfo$descriptor$blowUpLon,
     dataInfo$descriptor$blowUpLat,
     bbInfo, bbInfoScaled)
+
+  return(data)
+}
+
+
+getDataMultiFile <- function(dataInfo, year, label, bbInfo = NULL) {
+
+  # TODO
+
+  # NOTE: using filter() here seems a bit slow
+  sel <- dataInfo$meta$year == year & dataInfo$meta$label == label
+  info <- dataInfo$meta[sel,]
+  stopifnot(nrow(info) == 1)
+
+  timeIndices <- getTimeIndicesYear(
+    info$filePath,
+    dataInfo$timeDimName,
+    year)
+  stopifnot(all(abs(diff(timeIndices)) == 1))
+
+
+  if (hasValue(bbInfo)) {
+    # TODO: convert bbox format to data format
+    lonLatTimeStart <- c(
+      bbInfo$min_lon,
+      bbInfo$min_lat,
+      min(timeIndices))
+    lonLatTimeCount <- c(
+      bbInfo$max_lon - bbInfo$min_lon + 1,
+      bbInfo$max_lat - bbInfo$min_lat + 1,
+      length(timeIndices))
+  } else {
+    lonLatTimeStart <- c(1, 1, min(timeIndices))
+    lonLatTimeCount <- c(NA, NA, length(timeIndices))
+  }
+  start <- permuteDimIdsLonLatTime(dataInfo, lonLatTimeStart)
+  count <- permuteDimIdsLonLatTime(dataInfo, lonLatTimeCount)
+
+  nc <- open.nc(info$filePath)
+  data <- var.get.nc(
+    nc,
+    label,
+    start = start,
+    count = count,
+    collapse = FALSE)
+  close.nc(nc)
+
+  if (dataInfo$descriptor$setNaToZero) {
+    data <- ifelse(is.na(data), 0, data)
+  }
+
+  # Set correct dimnames of data
+  dimNames <- dataInfo$dimNames[dataInfo$varDimIds+1]
+  dimNameList <- list(NULL, NULL, NULL)
+  names(dimNameList) <- dimNames
+  dimnames(data) <- dimNameList
 
   return(data)
 }
@@ -396,4 +514,5 @@ blowUp <- function(x, blowUpLon, blowUpLat, bbInfo, bbInfoScaled) {
 
   return(y)
 }
+
 

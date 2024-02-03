@@ -147,3 +147,25 @@ getNativeGridFormatFromNc <- function(nc, variableName = NULL, onlyLonLat = FALS
       latIncreasing = latIncreasing,
       lonFirst = lonFirst))
 }
+
+
+
+ensureGridFormat <- function(data, targetGrid, sourceGrid) {
+  dimNames <- data |> dimnames() |> names()
+  if (sourceGrid$lonIncreasing != targetGrid$lonIncreasing) {
+    data <- reverseArrayDim(data, which(dimNames == "lon"))
+  }
+  if (sourceGrid$latIncreasing != targetGrid$latIncreasing) {
+    data <- reverseArrayDim(data, which(dimNames == "lat"))
+  }
+  dimNamesLonLat <- dimNames[dimNames %in% c("lon", "lat")]
+  if (!all(dimNamesLonLat == targetGrid$orderedNames)) {
+    dimNamesPerm <- dimNames
+    names(dimNamesPerm) <- dimNames
+    dimNamesPerm[dimNamesLonLat] <- targetGrid$orderedNames
+    data <- aperm(data, dimNamesPerm)
+  }
+  # TODO: make sure that lon and lat are the first two dimensions
+  return(data)
+}
+

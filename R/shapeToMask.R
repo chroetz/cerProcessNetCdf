@@ -19,6 +19,7 @@ runShapeToMaskOneFileForAllRegions <- function(
   if (!hasValueString(idColumnName)) idColumnName <- guessIdColumnName(sf)
 
   if (hasValueString(metaOutFilePath)) {
+    makeDirsIfNecessary(metaOutFilePath)
     meta <-
       unclass(sf)[isStandardClass] |>
       as_tibble()
@@ -135,6 +136,7 @@ getGlobalRaster <- function(nLon, nLat) {
 
 
 initLonLatNetCdf <- function(outFilePath, raster) {
+  makeDirsIfNecessary(outFilePath)
   cat("Create output file", outFilePath, "\n")
   outNc <- create.nc(outFilePath, format = "netcdf4")
   dim.def.nc(outNc, "lon", dimlength = raster$dimLon |> length())
