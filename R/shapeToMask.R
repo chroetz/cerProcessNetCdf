@@ -136,7 +136,7 @@ getGlobalRaster <- function(nLon, nLat) {
 
 
 initLonLatNetCdf <- function(outFilePath, raster) {
-  makeDirsIfNecessary(outFilePath)
+  outFilePath <- makeDirsIfNecessary(outFilePath)
   cat("Create output file", outFilePath, "\n")
   outNc <- create.nc(outFilePath, format = "netcdf4")
   dim.def.nc(outNc, "lon", dimlength = raster$dimLon |> length())
