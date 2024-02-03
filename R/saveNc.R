@@ -1,4 +1,4 @@
-saveNetCdf <- function(outFilePath, dimList, valueList) {
+saveNetCdf <- function(outFilePath, dimList, valueList, deflate = 9) {
   outNc <- create.nc(outFilePath, format = "netcdf4", share = FALSE)
   for (i in seq_along(dimList)) {
     dimName <- names(dimList)[i]
@@ -13,7 +13,7 @@ saveNetCdf <- function(outFilePath, dimList, valueList) {
     var.put.nc(outNc, dimName, dimList[[i]])
   }
   for (nm in names(valueList)) {
-    var.def.nc(outNc, nm, "NC_DOUBLE", names(dimList), deflate = 9)
+    var.def.nc(outNc, nm, "NC_DOUBLE", names(dimList), deflate = deflate)
     var.put.nc(outNc, nm, valueList[[nm]])
   }
   close.nc(outNc)

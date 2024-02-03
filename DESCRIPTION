@@ -22,6 +22,7 @@ Imports:
     sf,
     stringr,
     tibble,
-    tidyr
+    tidyr,
+    abind
 Suggests: 
     testthat (>= 3.0.0)

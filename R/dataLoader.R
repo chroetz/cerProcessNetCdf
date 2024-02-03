@@ -71,7 +71,7 @@ loadDataMultiFile <- function(dataDescriptor) {
       descriptor = dataDescriptor,
       gridFormat,
       years = years,
-      label = labels,
+      labels = labels,
       timeDimName,
       dimIds,
       dimNames,
@@ -124,7 +124,7 @@ loadDataYearlyFiles <- function(dataDescriptor) {
       descriptor = dataDescriptor,
       gridFormat,
       years = unique(fileYears),
-      label = unique(fileLabels),
+      labels = unique(fileLabels),
       variableName,
       dimIds,
       dimNames,
@@ -268,8 +268,6 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
 
 
 getDataMultiFile <- function(dataInfo, year, label, bbInfo = NULL) {
-
-  # TODO
 
   # NOTE: using filter() here seems a bit slow
   sel <- dataInfo$meta$year == year & dataInfo$meta$label == label
