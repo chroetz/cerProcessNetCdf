@@ -46,8 +46,7 @@ sumMask <- function(
   cat("Save maskScalingValues ... ")
   saveNetCdf(
     .info$outFilePath,
-    name = "maskSum",
     dimList = list(lon = .info$grid$lonValues, lat = .info$grid$latValues),
-    values = maskScalingValues)
+    valueList = list(maskSum = maskScalingValues))
   cat("Done.\n")
 }

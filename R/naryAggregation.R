@@ -1,6 +1,6 @@
 #' @export
 aggregateNaryMasked <- function(
-  targetFormat = getNativeGridFormatFromFile(maskFilePath),
+  targetFormat = NULL,
   maskFilePath,
   maskSumFilePath = NULL,
   boundingBoxFilePath = NULL,
@@ -12,6 +12,8 @@ aggregateNaryMasked <- function(
   nBatches = 1,
   batchIndex = 1
 ) {
+
+  if (is.null(targetFormat)) targetFormat <- getNativeGridFormatFromFile(maskFilePath)
 
   clearInfo()
   argNames <- rlang::fn_fmls_names()
