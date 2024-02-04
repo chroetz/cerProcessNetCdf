@@ -9,8 +9,8 @@ getTheDataTimeAll <- function(lotIdx, lineCount, timeRange) {
   data <- switch(
     subclass,
     MultiFile = getDataTimeAllMultiFile(dataInfo, label, lotIdx, lineCount, timeRange),
-    YearlyFiles = getDataTimeAllYearlyFiles(dataInfo, label, lotIdx, lineCount, timeRange), # TODO
-    SingleFile = getDataTimeAllSingleFile(dataInfo, label, lotIdx, lineCount, timeRange), # TODO
+    #YearlyFiles = getDataTimeAllYearlyFiles(dataInfo, label, lotIdx, lineCount, timeRange), # TODO
+    #SingleFile = getDataTimeAllSingleFile(dataInfo, label, lotIdx, lineCount, timeRange), # TODO
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
 
@@ -22,11 +22,14 @@ getTheDataTimeAll <- function(lotIdx, lineCount, timeRange) {
 }
 
 
-getDataTimeAllMultiFile <- function(dataInfo, label, lotIdx, lineCount, timeRange) {
+getDataTimeAllMultiFile <- function(dataInfo, label, lotIdx, lineCount, timeRange = NULL) {
 
-  yearFrom <- lubridate::year(timeRange[1])
-  yearTo <- lubridate::year(timeRange[2])
-  sel <- dataInfo$meta$label == label & dataInfo$meta$year >= yearFrom & dataInfo$meta$year <= yearTo
+  sel <- dataInfo$meta$label == label
+  if (!is.null(timeRange)) {
+    yearFrom <- lubridate::year(timeRange[1])
+    yearTo <- lubridate::year(timeRange[2])
+    sel <- sel & dataInfo$meta$year >= yearFrom & dataInfo$meta$year <= yearTo
+  }
   info <- dataInfo$meta[sel,]
   filePaths <- info$filePath |> unique()
   stopifnot(length(filePaths) > 0)
@@ -47,12 +50,16 @@ getDataTimeAllMultiFile <- function(dataInfo, label, lotIdx, lineCount, timeRang
 }
 
 
-getDataTimeAllMultiFileOneFile <- function(filePath, dataInfo, label, lotIdx, lineCount, timeRange) {
+getDataTimeAllMultiFileOneFile <- function(filePath, dataInfo, label, lotIdx, lineCount, timeRange = NULL) {
 
   times <- dataInfo$timeList[[filePath]]
-  sel <- times >= timeRange[1] & times <= timeRange[2]
-  timeIdx <- which(sel)
-  stopifnot(all(abs(diff(timeIdx)) == 1))
+  if (!is.null(timeRange)) {
+    sel <- times >= timeRange[1] & times <= timeRange[2]
+    timeIdx <- which(sel)
+    stopifnot(all(abs(diff(timeIdx)) == 1))
+  } else {
+    timeIdx <- seq_along(times)
+  }
 
   if (.info$idxDim == "lon") {
     lonLatTimeStart <- c(lotIdx, 1, min(timeIdx))

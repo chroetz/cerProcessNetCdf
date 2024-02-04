@@ -1,3 +1,4 @@
+#' @export
 rollTimeApply <- function(
   targetFormat = NULL,
   variableDataDescriptor,
@@ -14,10 +15,17 @@ rollTimeApply <- function(
 
   idxDim <- match.arg(idxDim)
 
+  applyFunctionListNames <- names(applyFunctionList)
+  applyFunctionList <- lapply(applyFunctionList, resolveAppltFunction)
+  names(applyFunctionList) <- applyFunctionListNames
+
+  if (!length(fill) == 0) fill <- NA_real_
+  if (is.character(fill) && !fill %in% c("const")) fill <- eval(parse(text = fill))
+
+  if (!is.null(timeRange)) timeRange <- lubridate::as_datetime(timeRange)
+
   clearInfo()
-
   loadData(variableDataDescriptor)
-
   if (is.null(targetFormat)) targetFormat <- .info$data[[1]]$gridFormat
 
   argNames <- rlang::fn_fmls_names()
@@ -25,11 +33,6 @@ rollTimeApply <- function(
   lapply(argNames, \(nm) assign(nm, env[[nm]], .info))
 
   initializeGrid(targetFormat)
-
-  if (file.exists(.info$outFilePath)) {
-    cat(.info$outFilePath, "already exists. Deleting.\n")
-    file.remove(.info$outFilePath)
-  }
 
   lotMax <- if (idxDim == "lon") .info$grid$nLon else .info$grid$nLat
   lonIdices <- seq(1, lotMax, by = lineCount)
@@ -56,10 +59,12 @@ processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
   cat("Processing index", lotIdx, "...\n")
 
   pt1 <- proc.time()
+  cat("\tGetting data ...")
   data <- getTheDataTimeAll(lotIdx, lineCount, timeRange)
-  cat("\tgetDataAllTimeAll duration:", (proc.time()-pt1)[3], "s\n")
+  cat("duration:", (proc.time()-pt1)[3], "s\n")
 
   pt2 <- proc.time()
+  cat("\tApplying functions ...")
   valueList <- lapply(
     .info$applyFunctionList,
     \(fun) {
@@ -72,11 +77,13 @@ processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
       return(res)
     })
   names(valueList) <- names(.info$applyFunctionList)
-  cat("\tapplyFunctionList duration:", (proc.time()-pt2)[3], "s\n")
+  cat("duration:", (proc.time()-pt2)[3], "s\n")
 
   outFilePath <- paste0(
     cerUtility::removeFileNameEnding(.info$outFilePath),
     "_", lotIdx, ".nc")
+  dirPath <- dirname(outFilePath)
+  if (!dir.exists(dirPath)) dir.create(dirPath, recursive = TRUE)
 
   if (.info$idxDim == "lon") {
     dimList <- list(
@@ -87,16 +94,19 @@ processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
       lon = .info$grid$lonValues,
       lat = .info$grid$latValues[lotIdx:(lotIdx + lineCount - 1)])
   }
-  allTimes <- .info$data[[1]]$timeList |> unlist()
-  times <- allTimes[allTimes >= .info$timeRange[1] & allTimes <= .info$timeRange[2]]
+  times <- .info$data[[1]]$timeList |> unlist()
+  if (!is.null(.info$timeRange)) {
+    times <- times[times >= .info$timeRange[1] & times <= .info$timeRange[2]]
+  }
   dimList[[.info$data[[1]]$timeDimName]] <- as.integer(times)
 
   pt3 <- proc.time()
+  cat("\tSaving to", outFilePath, "...")
   saveNetCdf(
     outFilePath,
     dimList = dimList,
     valueList = valueList)
-  cat("\tSaving to", outFilePath, "duration:", (proc.time()-pt3)[3], "s\n")
+  cat("duration:", (proc.time()-pt3)[3], "s\n")
   cat("All done after", (proc.time()-pt)[3], "s\n")
 }
 
@@ -132,4 +142,15 @@ rollApply <- function(fun, x, padding, fill = NA_real_) {
     stop("fill must be numeric or character.")
   }
   return(res)
+}
+
+
+resolveAppltFunction <- function(fun) {
+  if (is.function(fun)) return(fun)
+  if (is.character(fun)) {
+    if (fun %in% c("mean", "max", "median", "sum")) return(fun)
+    return(eval(parse(text = fun)))
+  } else {
+    stop("fun must be function or character.")
+  }
 }
