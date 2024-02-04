@@ -9,6 +9,7 @@ rollTimeApply <- function(
   idxDim = c("lon", "lat"),
   lineCount = 1,
   timeRange = NULL,
+  deflate = 9,
   nBatches = 1,
   batchIndex = 1
 ) {
@@ -106,7 +107,8 @@ processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
   saveNetCdf( # TODO: copy attributes from input file
     outFilePath,
     dimList = dimList,
-    valueList = valueList)
+    valueList = valueList,
+    deflate = .info$deflate)
   cat("duration:", (proc.time()-pt3)[3], "s\n")
   cat("All done after", (proc.time()-pt)[3], "s\n")
 }
