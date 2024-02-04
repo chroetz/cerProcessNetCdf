@@ -94,15 +94,16 @@ processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
       lon = .info$grid$lonValues,
       lat = .info$grid$latValues[lotIdx:(lotIdx + lineCount - 1)])
   }
-  times <- .info$data[[1]]$timeList |> unlist()
+  timeValues <- .info$data[[1]]$timeValuesList |> unlist()
   if (!is.null(.info$timeRange)) {
-    times <- times[times >= .info$timeRange[1] & times <= .info$timeRange[2]]
+    times <- .info$data[[1]]$timeList |> unlist()
+    timeValues <- timeValues[times >= .info$timeRange[1] & times <= .info$timeRange[2]]
   }
-  dimList[[.info$data[[1]]$timeDimName]] <- as.integer(times)
+  dimList[[.info$data[[1]]$timeDimName]] <- timeValues
 
   pt3 <- proc.time()
   cat("\tSaving to", outFilePath, "...")
-  saveNetCdf(
+  saveNetCdf( # TODO: copy attributes from input file
     outFilePath,
     dimList = dimList,
     valueList = valueList)

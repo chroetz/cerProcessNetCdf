@@ -1,9 +1,13 @@
-getFileTimes <- function(ncFilePath, timeDimName) {
+getFileTimes <- function(ncFilePath, timeDimName, convertToDatetime = TRUE) {
   nc <- open.nc(ncFilePath)
   values <- var.get.nc(nc, timeDimName)
   unitText <- att.get.nc(nc, timeDimName, "units")
   close.nc(nc)
-  times <- numericToTime(values, unitText)
+  if (convertToDatetime) {
+    times <- numericToTime(values, unitText)
+  } else {
+    times <- values
+  }
   return(times)
 }
 
