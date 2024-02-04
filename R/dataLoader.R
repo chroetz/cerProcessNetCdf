@@ -47,9 +47,7 @@ loadDataMultiFile <- function(dataDescriptor) {
   names(dimIds) <- c("lon", "lat", timeDimName)
   close.nc(nc)
 
-  timeValuesList <- lapply(filePaths, getFileTimes, timeDimName = timeDimName, convertToDatetime = FALSE)
-  names(timeValuesList) <- filePaths
-  timeList <- lapply(filePaths, getFileTimes, timeDimName = timeDimName, convertToDatetime = TRUE)
+  timeList <- lapply(filePaths, getFileTimes, timeDimName = timeDimName)
   startTime <- lapply(timeList, \(x) min(x)) |> unlist()
   endTime <- lapply(timeList, \(x) max(x)) |> unlist()
   names(timeList) <- filePaths
@@ -82,7 +80,6 @@ loadDataMultiFile <- function(dataDescriptor) {
       labels = labels,
       timeDimName,
       timeList,
-      timeValuesList,
       dimIds,
       dimNames,
       varDimIds,

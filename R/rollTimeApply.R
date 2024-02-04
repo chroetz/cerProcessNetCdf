@@ -14,6 +14,8 @@ rollTimeApply <- function(
   batchIndex = 1
 ) {
 
+  if (is.character(timeRange)) timeRange <- lubridate::as_date(timeRange)
+
   idxDim <- match.arg(idxDim)
 
   applyFunctionListNames <- names(applyFunctionList)
@@ -23,7 +25,7 @@ rollTimeApply <- function(
   if (!length(fill) == 0) fill <- NA_real_
   if (is.character(fill) && !fill %in% c("const")) fill <- eval(parse(text = fill))
 
-  if (!is.null(timeRange)) timeRange <- lubridate::as_datetime(timeRange)
+  if (!is.null(timeRange)) timeRange <- lubridate::as_date(timeRange)
 
   clearInfo()
   loadData(variableDataDescriptor)
@@ -55,18 +57,6 @@ rollTimeApply <- function(
 
 
 processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
-
-  timeValues <- .info$data[[1]]$timeValuesList |> unlist()
-  if (!is.null(.info$timeRange)) {
-    times <- .info$data[[1]]$timeList |> unlist()
-    timeValues <- timeValues[times >= .info$timeRange[1] & times <= .info$timeRange[2]]
-  }
-  if (!all(order(timeValues) == seq_along(timeValues))) {
-    cat(paste0(timeValues, collapse=","), "\n")
-    print(.info$data[[1]]$meta)
-    stop()
-  # stopifnot(all(order(timeValues) == seq_along(timeValues))) # is sorted
-  }
 
   pt <- proc.time()
   cat("Processing index", lotIdx, "...\n")
@@ -108,17 +98,13 @@ processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
       lat = .info$grid$latValues[lotIdx:(lotIdx + lineCount - 1)])
   }
 
-  timeValues <- .info$data[[1]]$timeValuesList |> unlist()
+  times <- .info$data[[1]]$timeList |> unlist()
   if (!is.null(.info$timeRange)) {
-    times <- .info$data[[1]]$timeList |> unlist()
-    timeValues <- timeValues[times >= .info$timeRange[1] & times <= .info$timeRange[2]]
+    times <- times[times >= .info$timeRange[1] & times <= .info$timeRange[2]]
   }
-  if (!all(order(timeValues) == seq_along(timeValues))) {
-    cat(paste0(timeValues, collapse=","), "\n")
-    print()
-    stop()
-  # stopifnot(all(order(timeValues) == seq_along(timeValues))) # is sorted
-  }
+  timeValues <- as.integer(times)
+  stopifnot(all(order(timeValues) == seq_along(timeValues)))
+  attr(timeValues, "units") <- "days since 1970-01-01"
   dimList[[.info$data[[1]]$timeDimName]] <- timeValues
 
   pt3 <- proc.time()

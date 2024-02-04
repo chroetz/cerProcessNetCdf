@@ -6,6 +6,7 @@ concatAfterRoll <- function(
   suffix = "",
   referenceDirPath,
   referencePattern,
+  chunks = 10,
   deflate = 9
 ) {
 
@@ -22,14 +23,24 @@ concatAfterRoll <- function(
   meta <- getNetCdfDimensionMeta(filePaths)
   referenceMeta <- getNetCdfDimensionMeta(referenceFilePaths)
 
-  for (i in seq_along(referenceMeta)) {
-    rm <- referenceMeta[[i]]
+  for (rm in referenceMeta) {
+
+    cat("Processing reference file", rm$filePath, "\n")
+
     outFilePath <- file.path(
       outDirPath,
       paste0(cerUtility::removeFileNameEnding(basename(rm$filePath)), suffix, ".nc"))
-    outNc <- initCopyNetCdf(outFilePath, rm$filePath, deflate = deflate)
-    timeValuesList <- list(rm$time[1:floor(length(rm$time)/2)], rm$time[(floor(length(rm$time)/2)+1):length(rm$time)])
-    for (timeValues in timeValuesList) {
+
+    outTimeDim <- rm$timeInterpreted |> as.integer()
+    attributes(outTimeDim) <- list(units = "days since 1970-01-01", calendar = "gregorian")
+    outNc <- initCopyNetCdf(outFilePath, rm$filePath, deflate = deflate, time = outTimeDim)
+    # TODO: use initNetCdf() instead
+
+    timeIdxAll <- seq_along(rm$timeInterpreted)
+    timeIdxList <- cerUtility::setupBatches(timeIdxAll, chunks)
+
+    for (timeIdxs in timeIdxList) {
+      timeValues <- rm$timeInterpreted[timeIdxs]
       cat("\tGetting values for time value form ", min(timeValues), "to", max(timeValues), "... ")
       pt <- proc.time()
       v <- getAllForTimes(meta, timeValues)
@@ -54,7 +65,8 @@ getNetCdfDimensionMeta <- function(filePaths) {
       varName = ncGetNonDimVariableNames(nc),
       lon = var.get.nc(nc, "lon"),
       lat = var.get.nc(nc, "lat"),
-      time = var.get.nc(nc, "time"))
+      time = var.get.nc(nc, "time"),
+      timeInterpreted = getNcTimes(nc, "time"))
     close.nc(nc)
     return(res)
   })
@@ -63,8 +75,11 @@ getNetCdfDimensionMeta <- function(filePaths) {
 
 getAllForTimes <- function(meta, timeValues) {
   dataList <- lapply(meta, \(m) {
-    timeIdx <- which(m$time %in% timeValues)
+    timeIdx <- which(m$timeInterpreted %in% timeValues)
     stopifnot(all(abs(diff(timeIdx)) == 1))
+    if (length(timeIdx) != length(timeValues)) {
+      stop("Some time values from the reference files are not available in the data files.")
+    }
     start <- c(1, 1, min(timeIdx))
     count <- c(NA, NA, length(timeIdx))
     nc <- open.nc(m$filePath)
@@ -82,61 +97,3 @@ getAllForTimes <- function(meta, timeValues) {
   return(values)
 }
 
-
-initCopyNetCdf <- function(outFilePath, sourceFilePath, deflate = 9) {
-
-  makeDirsIfNecessary(outFilePath)
-  pt <- proc.time()
-  cat("Creating output file", outFilePath, "... ")
-
-  outNc <- create.nc(outFilePath, format = "netcdf4")
-  nc <- open.nc(sourceFilePath)
-
-  fileInq <- file.inq.nc(nc)
-  dimNames <- ncGetDimensionNames(nc)
-
-  for (idim in seq_len(fileInq$ndims)) {
-    dimInq <- dim.inq.nc(nc, idim - 1)
-    dim.def.nc(outNc, dimInq$name, dimInq$length, dimInq$unlim)
-  }
-
-  for (ivar in seq_len(fileInq$nvars)) {
-    varInq <- var.inq.nc(nc, ivar - 1)
-    defl <- if (varInq$name %in% dimNames) NA else deflate
-    var.def.nc(outNc, varInq$name, varInq$type, varInq$dimids, deflate = defl)
-    if (varInq$name %in% dimNames) {
-      var.put.nc(outNc, varInq$name, var.get.nc(nc, varInq$name))
-    }
-    for (iatt in seq_len(varInq$natts)) {
-      attInq <- att.inq.nc(nc, varInq$name, iatt - 1)
-      att.put.nc(
-        outNc,
-        varInq$name,
-        attInq$name,
-        attInq$type,
-        att.get.nc(nc, varInq$name, attInq$name))
-    }
-  }
-
-  close.nc(nc)
-
-  cat("done after", (proc.time()-pt)[3], "s\n")
-
-  return(outNc)
-}
-
-
-saveLonLatTimeToNetCdf <- function(nc, info, data) {
-  lonIdx <- which(info$lon %in% dimnames(data)[["lon"]])
-  latIdx <- which(info$lat %in% dimnames(data)[["lat"]])
-  timeIdx <- which(info$time %in% dimnames(data)[["time"]])
-  start <- c(min(lonIdx), min(latIdx), min(timeIdx))
-  count <- c(length(lonIdx), length(latIdx), length(timeIdx))
-  var.put.nc(
-    nc,
-    info$varName,
-    data,
-    start = start,
-    count = count)
-  return(invisible(NULL))
-}
