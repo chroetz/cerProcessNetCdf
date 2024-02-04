@@ -50,6 +50,8 @@ loadDataMultiFile <- function(dataDescriptor) {
   timeValuesList <- lapply(filePaths, getFileTimes, timeDimName = timeDimName, convertToDatetime = FALSE)
   names(timeValuesList) <- filePaths
   timeList <- lapply(filePaths, getFileTimes, timeDimName = timeDimName, convertToDatetime = TRUE)
+  startTime <- lapply(timeList, \(x) min(x)) |> unlist()
+  endTime <- lapply(timeList, \(x) max(x)) |> unlist()
   names(timeList) <- filePaths
   yearList <- lapply(timeList, \(x) lubridate::year(x) |> unique())
   times <- unlist(timeList)
@@ -62,11 +64,14 @@ loadDataMultiFile <- function(dataDescriptor) {
       tibble(
         label = labels),
       tibble(
+        startTime = startTime,
+        endTime = endTime,
         year = yearList,
         fileName = fileNames,
         filePath = filePaths
       ) |>
-      tidyr::unnest_longer(year)
+        arrange(startTime) |>
+        tidyr::unnest_longer(year)
     )
 
   if (!"data" %in% names(.info)) .info$data <- list()

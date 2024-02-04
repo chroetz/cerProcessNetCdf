@@ -96,19 +96,17 @@ processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
       lat = .info$grid$latValues[lotIdx:(lotIdx + lineCount - 1)])
   }
 
-  stop("TODO")
-  # TODO: make sure that time is sorted (even if files are not)
-
   timeValues <- .info$data[[1]]$timeValuesList |> unlist()
   if (!is.null(.info$timeRange)) {
     times <- .info$data[[1]]$timeList |> unlist()
     timeValues <- timeValues[times >= .info$timeRange[1] & times <= .info$timeRange[2]]
   }
+  stopifnot(all(order(timeValues) == seq_along(timeValues))) # is sorted
   dimList[[.info$data[[1]]$timeDimName]] <- timeValues
 
   pt3 <- proc.time()
   cat("\tSaving to", outFilePath, "...")
-  saveNetCdf( # TODO: copy attributes from input file
+  saveNetCdf(
     outFilePath,
     dimList = dimList,
     valueList = valueList,

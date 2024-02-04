@@ -1,7 +1,9 @@
+#' @export
 concatAfterRoll <- function(
   dirPath,
   pattern,
-  outFilePath,
+  outDirPath,
+  suffix = "",
   referenceDirPath,
   referencePattern,
   deflate = 9
@@ -22,8 +24,10 @@ concatAfterRoll <- function(
 
   for (i in seq_along(referenceMeta)) {
     rm <- referenceMeta[[i]]
-    thisOutFilePath <- paste0(cerUtility::removeFileNameEnding(outFilePath), "_", i, ".nc")
-    outNc <- initCopyNetCdf(thisOutFilePath, rm$filePath, deflate = deflate)
+    outFilePath <- file.path(
+      outDirPath,
+      paste0(cerUtility::removeFileNameEnding(basename(rm$filePath)), suffix, ".nc"))
+    outNc <- initCopyNetCdf(outFilePath, rm$filePath, deflate = deflate)
     timeValuesList <- list(rm$time[1:floor(length(rm$time)/2)], rm$time[(floor(length(rm$time)/2)+1):length(rm$time)])
     for (timeValues in timeValuesList) {
       cat("\tGetting values for time value form ", min(timeValues), "to", max(timeValues), "... ")
@@ -123,9 +127,9 @@ initCopyNetCdf <- function(outFilePath, sourceFilePath, deflate = 9) {
 
 
 saveLonLatTimeToNetCdf <- function(nc, info, data) {
-  lonIdx <- which(info$lon == dimnames(data)[["lon"]])
-  latIdx <- which(info$lat == dimnames(data)[["lat"]])
-  timeIdx <- which(info$time == dimnames(data)[["time"]])
+  lonIdx <- which(info$lon %in% dimnames(data)[["lon"]])
+  latIdx <- which(info$lat %in% dimnames(data)[["lat"]])
+  timeIdx <- which(info$time %in% dimnames(data)[["time"]])
   start <- c(min(lonIdx), min(latIdx), min(timeIdx))
   count <- c(length(lonIdx), length(latIdx), length(timeIdx))
   var.put.nc(
