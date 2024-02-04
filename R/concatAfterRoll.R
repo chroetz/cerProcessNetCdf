@@ -7,7 +7,9 @@ concatAfterRoll <- function(
   referenceDirPath,
   referencePattern,
   chunks = 10,
-  deflate = 9
+  deflate = 9,
+  nBatches = 1,
+  batchIndex = 1
 ) {
 
   filePaths <- list.files(
@@ -23,7 +25,13 @@ concatAfterRoll <- function(
   meta <- getNetCdfDimensionMeta(filePaths)
   referenceMeta <- getNetCdfDimensionMeta(referenceFilePaths)
 
-  for (rm in referenceMeta) {
+  batch <- cerUtility::splitAndGetOneBatch(
+    paste0("reference-file"),
+    referenceMeta,
+    nBatches,
+    batchIndex)
+
+  for (rm in batch) {
 
     cat("Processing reference file", rm$filePath, "\n")
 
@@ -33,8 +41,11 @@ concatAfterRoll <- function(
 
     outTimeDim <- rm$timeInterpreted |> as.integer()
     attributes(outTimeDim) <- list(units = "days since 1970-01-01", calendar = "gregorian")
-    outNc <- initCopyNetCdf(outFilePath, rm$filePath, deflate = deflate, time = outTimeDim)
-    # TODO: use initNetCdf() instead
+    outNc <- initCopyNetCdf(
+      outFilePath,
+      rm$filePath,
+      deflate = deflate,
+      time = outTimeDim) # use initNetCdf() instead?
 
     timeIdxAll <- seq_along(rm$timeInterpreted)
     timeIdxList <- cerUtility::setupBatches(timeIdxAll, chunks)
