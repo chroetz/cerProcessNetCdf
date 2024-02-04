@@ -1,11 +1,13 @@
 rollTimeApply <- function(
   targetFormat = NULL,
-  variableDataDescriptorList,
-  applyExpressionList,
+  variableDataDescriptor,
+  applyFunctionList,
   outFilePath,
+  padding = c(3,3),
+  fill = NA_real_,
   idxDim = c("lon", "lat"),
   lineCount = 1,
-  timeRange = NULL, #TODO
+  timeRange = NULL,
   nBatches = 1,
   batchIndex = 1
 ) {
@@ -14,9 +16,7 @@ rollTimeApply <- function(
 
   clearInfo()
 
-  for (variableDataDescriptor in variableDataDescriptorList$list) {
-    loadData(variableDataDescriptor)
-  }
+  loadData(variableDataDescriptor)
 
   if (is.null(targetFormat)) targetFormat <- .info$data[[1]]$gridFormat
 
@@ -44,38 +44,35 @@ rollTimeApply <- function(
 
   cat("Start main loop.\n")
   for (batchElement in batch) {
-    processRollTimeApply(batchElement$lotIdx, batchElement$lineCount)
+    processRollTimeApply(batchElement$lotIdx, batchElement$lineCount, timeRange)
   }
   cat("End main loop.\n")
 }
 
 
-processRollTimeApply <- function(lotIdx, lineCount) {
+processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
 
   pt <- proc.time()
   cat("Processing index", lotIdx, "...\n")
 
   pt1 <- proc.time()
-  dataList <- getDataAllTimeAll(lotIdx, lineCount)
+  data <- getTheDataTimeAll(lotIdx, lineCount, timeRange)
   cat("\tgetDataAllTimeAll duration:", (proc.time()-pt1)[3], "s\n")
-
-  dim3 <- dim(dataList[[1]])
-  dimNames <- dimnames(dataList[[1]])
 
   pt2 <- proc.time()
   valueList <- lapply(
-    .info$applyExpressionList,
-    \(expr) {
-      res <- array(NA_real_, dim = dim3, dimnames = dimNames)
-      for (iLon in seq_len(dim3[1])) for (iLat in seq_len(dim3[2])) { # assume lon lat time order
-        d <- lapply(dataList, \(x) x[iLon, iLat, ])
-        names(d) <- names(dataList)
-        res[iLon, iLat, ] <- rollEval(expr, d)
-      }
+    .info$applyFunctionList,
+    \(fun) {
+      res <- array(NA_real_, dim = dim(data), dimnames = dimnames(data))
+      for (iLon in seq_len(dim(data)[1])) # assumes order: lon lat time
+        for (iLat in seq_len(dim(data)[2])) {
+          d <- data[iLon, iLat, ]
+          res[iLon, iLat, ] <- rollApply(fun, d, .info$padding, .info$fill)
+        }
       return(res)
     })
-  names(valueList) <- names(.info$applyExpressionList)
-  cat("\tapplyExpressionList duration:", (proc.time()-pt2)[3], "s\n")
+  names(valueList) <- names(.info$applyFunctionList)
+  cat("\tapplyFunctionList duration:", (proc.time()-pt2)[3], "s\n")
 
   outFilePath <- paste0(
     cerUtility::removeFileNameEnding(.info$outFilePath),
@@ -90,8 +87,9 @@ processRollTimeApply <- function(lotIdx, lineCount) {
       lon = .info$grid$lonValues,
       lat = .info$grid$latValues[lotIdx:(lotIdx + lineCount - 1)])
   }
-  # TODO: set correct time values
-  dimList[[(valueList[[1]] |> dimnames() |> names())[3]]] <- seq_len((valueList[[1]] |> dim())[3])
+  allTimes <- .info$data[[1]]$timeList |> unlist()
+  times <- allTimes[allTimes >= .info$timeRange[1] & allTimes <= .info$timeRange[2]]
+  dimList[[.info$data[[1]]$timeDimName]] <- as.integer(times)
 
   pt3 <- proc.time()
   saveNetCdf(
@@ -103,19 +101,35 @@ processRollTimeApply <- function(lotIdx, lineCount) {
 }
 
 
-getDataAllTimeAll <- function(lotIdx, lineCount) {
-  res <- lapply(names(.info$data), getDataTimeAll, lotIdx = lotIdx, lineCount = lineCount)
-  names(res) <- names(.info$data)
+rollApply <- function(fun, x, padding, fill = NA_real_) {
+  n <- length(x)
+  if (is.character(fun)) {
+    width <- sum(padding) + 1
+    resApply <- switch(
+      fun,
+      mean = zoo::rollmean(x, width),
+      max = zoo::rollmax(x, width),
+      median = zoo::rollmedian(x, width),
+      sum = zoo::rollsum(x, width),
+      stop("Unknown function string ", fun, "."))
+  } else if (is.function(fun)) {
+    resApply <- vapply(
+      (1+padding[1]):(n-padding[2]),
+      \(i) fun(x[(i-padding[1]):(i+padding[2])]),
+      numeric(1))
+  } else {
+    stop("fun must be function or character.")
+  }
+
+  if (is.numeric(fill)) {
+    res <- c(rep(fill, padding[1]), resApply, rep(fill, padding[2]))
+  } else if (is.character(fill)) {
+    res <- switch(
+      fill,
+      const = c(rep(first(resApply),padding[1]), resApply, rep(last(resApply), padding[2])),
+      stop("Unknown fill string ", fill, "."))
+  } else {
+    stop("fill must be numeric or character.")
+  }
   return(res)
-}
-
-
-rollEval <- function(expr, dataList, size = 3) {
-  # TODO
-  n <- dataList[[1]] |> length()
-  res <- sapply((1+size):(n-size), \(i) {
-    d <- lapply(dataList, \(x) x[(i-size):(i+size)])
-    rlang::eval_tidy(expr, data = d)
-  })
-  return(c(rep(NA_real_, size), res, rep(NA_real_, size)))
 }

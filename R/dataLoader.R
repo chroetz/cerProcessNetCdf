@@ -48,6 +48,7 @@ loadDataMultiFile <- function(dataDescriptor) {
   close.nc(nc)
 
   timeList <- lapply(filePaths, getFileTimes, timeDimName = timeDimName)
+  names(timeList) <- filePaths
   yearList <- lapply(timeList, \(x) lubridate::year(x) |> unique())
   times <- unlist(timeList)
   years <- unlist(yearList)
@@ -73,6 +74,7 @@ loadDataMultiFile <- function(dataDescriptor) {
       years = years,
       labels = labels,
       timeDimName,
+      timeList,
       dimIds,
       dimNames,
       varDimIds,

@@ -1,17 +1,16 @@
-getDataTimeAll <- function(name, lotIdx, lineCount) {
+getTheDataTimeAll <- function(lotIdx, lineCount, timeRange) {
 
-  # TODO: maybe switching lon and lat makes it much faster??
-
-  dataInfo <- .info$data[[name]]
+  stopifnot(length(.info$data) == 1)
+  dataInfo <- .info$data[[1]]
   label <- dataInfo$labels
   stopifnot(length(label) == 1)
 
   subclass <- ConfigOpts::getClassAt(dataInfo$descriptor, 2)
   data <- switch(
     subclass,
-    MultiFile = getDataTimeAllMultiFile(dataInfo, label, lotIdx, lineCount),
-    YearlyFiles = getDataTimeAllYearlyFiles(dataInfo, label, lotIdx, lineCount), # TODO
-    SingleFile = getDataTimeAllSingleFile(dataInfo, label, lotIdx, lineCount), # TODO
+    MultiFile = getDataTimeAllMultiFile(dataInfo, label, lotIdx, lineCount, timeRange),
+    YearlyFiles = getDataTimeAllYearlyFiles(dataInfo, label, lotIdx, lineCount, timeRange), # TODO
+    SingleFile = getDataTimeAllSingleFile(dataInfo, label, lotIdx, lineCount, timeRange), # TODO
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
 
@@ -23,9 +22,11 @@ getDataTimeAll <- function(name, lotIdx, lineCount) {
 }
 
 
-getDataTimeAllMultiFile <- function(dataInfo, label, lotIdx, lineCount) {
+getDataTimeAllMultiFile <- function(dataInfo, label, lotIdx, lineCount, timeRange) {
 
-  sel <- dataInfo$meta$label == label
+  yearFrom <- lubridate::year(timeRange[1])
+  yearTo <- lubridate::year(timeRange[2])
+  sel <- dataInfo$meta$label == label & dataInfo$meta$year >= yearFrom & dataInfo$meta$year <= yearTo
   info <- dataInfo$meta[sel,]
   filePaths <- info$filePath |> unique()
   stopifnot(length(filePaths) > 0)
@@ -36,7 +37,8 @@ getDataTimeAllMultiFile <- function(dataInfo, label, lotIdx, lineCount) {
     dataInfo = dataInfo,
     label = label,
     lotIdx = lotIdx,
-    lineCount = lineCount)
+    lineCount = lineCount,
+    timeRange = timeRange)
 
   data <- do.call(abind::abind, c(dataList, list(along = 3))) # time is the third dimension
   dimnames(data) <- dimnames(dataList[[1]]) # assumes no names for the values
@@ -45,14 +47,19 @@ getDataTimeAllMultiFile <- function(dataInfo, label, lotIdx, lineCount) {
 }
 
 
-getDataTimeAllMultiFileOneFile <- function(dataInfo, label, lotIdx, lineCount, filePath) {
+getDataTimeAllMultiFileOneFile <- function(filePath, dataInfo, label, lotIdx, lineCount, timeRange) {
+
+  times <- dataInfo$timeList[[filePath]]
+  sel <- times >= timeRange[1] & times <= timeRange[2]
+  timeIdx <- which(sel)
+  stopifnot(all(abs(diff(timeIdx)) == 1))
 
   if (.info$idxDim == "lon") {
-    lonLatTimeStart <- c(lotIdx, 1, 1)
-    lonLatTimeCount <- c(lineCount, NA, NA)
+    lonLatTimeStart <- c(lotIdx, 1, min(timeIdx))
+    lonLatTimeCount <- c(lineCount, NA, length(timeIdx))
   } else {
-    lonLatTimeStart <- c(1, lotIdx, 1)
-    lonLatTimeCount <- c(NA, lineCount, NA)
+    lonLatTimeStart <- c(1, lotIdx, min(timeIdx))
+    lonLatTimeCount <- c(NA, lineCount, length(timeIdx))
   }
 
   start <- permuteDimIdsLonLatTime(dataInfo, lonLatTimeStart)
