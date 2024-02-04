@@ -24,10 +24,11 @@ concatAfterRoll <- function(
     rm <- referenceMeta[[i]]
     thisOutFilePath <- paste0(cerUtility::removeFileNameEnding(outFilePath), "_", i, ".nc")
     outNc <- initCopyNetCdf(thisOutFilePath, rm$filePath, deflate = deflate)
-    for (timeValue in rm$time) {
-      cat("\tStart to get values for time value", timeValue, "... ")
+    timeValuesList <- list(rm$time[1:floor(length(rm$time)/2)], rm$time[(floor(length(rm$time)/2)+1):length(rm$time)])
+    for (timeValues in timeValuesList) {
+      cat("\tGetting values for time value form ", min(timeValues), "to", max(timeValues), "... ")
       pt <- proc.time()
-      v <- getAllForOneTime(meta, timeValue)
+      v <- getAllForTimes(meta, timeValues)
       cat("done after", (proc.time()-pt)[3], "s\n")
 
       cat("\tSaving data to file ... ")
@@ -56,11 +57,12 @@ getNetCdfDimensionMeta <- function(filePaths) {
   return(meta)
 }
 
-getAllForOneTime <- function(meta, timeValue) {
+getAllForTimes <- function(meta, timeValues) {
   dataList <- lapply(meta, \(m) {
-    timeIdx <- which(m$time == timeValue)
-    start <- c(1, 1, timeIdx)
-    count <- c(NA, NA, 1)
+    timeIdx <- which(m$time %in% timeValues)
+    stopifnot(all(abs(diff(timeIdx)) == 1))
+    start <- c(1, 1, min(timeIdx))
+    count <- c(NA, NA, length(timeIdx))
     nc <- open.nc(m$filePath)
     data <- var.get.nc(
       nc,
@@ -69,7 +71,7 @@ getAllForOneTime <- function(meta, timeValue) {
       count = count,
       collapse = FALSE)
     close.nc(nc)
-    dimnames(data) <- list(lon = m$lon, lat = m$lat, time = timeValue)
+    dimnames(data) <- list(lon = m$lon, lat = m$lat, time = timeValues)
     return(data)
   })
   values <- do.call(abind::abind, c(dataList, list(along=2, use.dnns=TRUE)))

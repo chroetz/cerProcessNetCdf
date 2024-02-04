@@ -95,6 +95,10 @@ processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
       lon = .info$grid$lonValues,
       lat = .info$grid$latValues[lotIdx:(lotIdx + lineCount - 1)])
   }
+
+  stop("TODO")
+  # TODO: make sure that time is sorted (even if files are not)
+
   timeValues <- .info$data[[1]]$timeValuesList |> unlist()
   if (!is.null(.info$timeRange)) {
     times <- .info$data[[1]]$timeList |> unlist()
