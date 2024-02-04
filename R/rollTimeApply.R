@@ -56,6 +56,18 @@ rollTimeApply <- function(
 
 processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
 
+  timeValues <- .info$data[[1]]$timeValuesList |> unlist()
+  if (!is.null(.info$timeRange)) {
+    times <- .info$data[[1]]$timeList |> unlist()
+    timeValues <- timeValues[times >= .info$timeRange[1] & times <= .info$timeRange[2]]
+  }
+  if (!all(order(timeValues) == seq_along(timeValues))) {
+    cat(paste0(timeValues, collapse=","), "\n")
+    print(.info$data[[1]]$meta)
+    stop()
+  # stopifnot(all(order(timeValues) == seq_along(timeValues))) # is sorted
+  }
+
   pt <- proc.time()
   cat("Processing index", lotIdx, "...\n")
 
@@ -101,7 +113,12 @@ processRollTimeApply <- function(lotIdx, lineCount, timeRange) {
     times <- .info$data[[1]]$timeList |> unlist()
     timeValues <- timeValues[times >= .info$timeRange[1] & times <= .info$timeRange[2]]
   }
-  stopifnot(all(order(timeValues) == seq_along(timeValues))) # is sorted
+  if (!all(order(timeValues) == seq_along(timeValues))) {
+    cat(paste0(timeValues, collapse=","), "\n")
+    print()
+    stop()
+  # stopifnot(all(order(timeValues) == seq_along(timeValues))) # is sorted
+  }
   dimList[[.info$data[[1]]$timeDimName]] <- timeValues
 
   pt3 <- proc.time()
