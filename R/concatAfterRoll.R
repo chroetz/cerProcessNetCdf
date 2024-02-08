@@ -69,6 +69,7 @@ concatAfterRoll <- function(
 }
 
 getNetCdfDimensionMeta <- function(filePaths) {
+
   meta <- lapply(filePaths, \(filePath) {
     nc <- open.nc(filePath)
     res <- list(
@@ -81,6 +82,22 @@ getNetCdfDimensionMeta <- function(filePaths) {
     close.nc(nc)
     return(res)
   })
+
+  m1 <- meta[[1]]
+  for (m in meta) stopifnot(all(m$lon == m1$lon))
+  latFirsts <- sapply(meta, \(m) m$lat[1])
+  latLasts <- sapply(meta, \(m) m$lat[length(m$lat)])
+  latMins <- sapply(meta, \(m) min(m$lat))
+  latMaxs <- sapply(meta, \(m) max(m$lat))
+  stopifnot(all(latFirsts == latMaxs)) # TODO: assumes lat order decreasing
+  stopifnot(all(latLasts == latMins))
+
+  order <- order(latFirsts, decreasing = TRUE)
+  meta <- meta[order]
+
+  latFirstsNew <- sapply(meta, \(m) m$lat[1])
+  stopifnot(order(latFirstsNew, decreasing = TRUE) == seq_along(latFirstsNew))
+
   return(meta)
 }
 
@@ -104,6 +121,7 @@ getAllForTimes <- function(meta, timeValues) {
     dimnames(data) <- list(lon = m$lon, lat = m$lat, time = timeValues)
     return(data)
   })
+  # TODO: assumes lon lat time order, lon full, and lat ordered
   values <- do.call(abind::abind, c(dataList, list(along=2, use.dnns=TRUE)))
   return(values)
 }

@@ -19,7 +19,7 @@ rollTimeApply <- function(
   idxDim <- match.arg(idxDim)
 
   applyFunctionListNames <- names(applyFunctionList)
-  applyFunctionList <- lapply(applyFunctionList, resolveAppltFunction)
+  applyFunctionList <- lapply(applyFunctionList, resolveApplyFunction)
   names(applyFunctionList) <- applyFunctionListNames
 
   if (!length(fill) == 0) fill <- NA_real_
@@ -153,7 +153,7 @@ rollApply <- function(fun, x, padding, fill = NA_real_) {
 }
 
 
-resolveAppltFunction <- function(fun) {
+resolveApplyFunction <- function(fun) {
   if (is.function(fun)) return(fun)
   if (is.character(fun)) {
     if (fun %in% c("mean", "max", "median", "sum")) return(fun)
