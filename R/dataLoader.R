@@ -150,29 +150,7 @@ loadDataSingleFile <- function(dataDescriptor) {
   on.exit(close.nc(nc))
 
   dimNames <- ncGetDimensionNames(nc)
-  timeDimName <- setdiff(dimNames, c("lon", "lat"))
-  stopifnot(length(timeDimName) == 1)
-  timeValues <- var.get.nc(nc, timeDimName) |> as.vector()
-  timeVarInfo <- var.inq.nc(nc, timeDimName)
-
-  attNames <- sapply(
-    seq_len(timeVarInfo$natts)-1,
-    \(i) att.inq.nc(nc, timeDimName, i)$name)
-  if ("units" %in% attNames) {
-    timeUnitDescription <- att.get.nc(nc, timeDimName, "units")
-    pattern <- "^days since ([\\d-]+)( \\d{2}:\\d{2}:(\\d{2})?)?"
-    stopifnot(str_detect(timeUnitDescription, pattern))
-    startDayText <- str_match(timeUnitDescription, pattern)[,2]
-    startDate <- as.Date(startDayText)
-    startYear <- lubridate::year(startDate)
-    years <- timeValues/365 + startYear
-    formattedStartDate <- format(startDate, "%B %d, %Y")
-    cat(
-      "Assume that time values are days since year", startYear, "(", formattedStartDate, ").\n")
-  } else {
-    years <- timeValues
-    cat("Assume that time values are years.\n")
-  }
+  timeDim <- ncLoadTimeDimension(nc)
 
   labels <- ncGetNonDimVariableNames(nc)
   if (hasValueString(dataDescriptor$dataVariableNames)) {
@@ -192,26 +170,24 @@ loadDataSingleFile <- function(dataDescriptor) {
   dimIds <- c(
     dim.inq.nc(nc, "lon")$id,
     dim.inq.nc(nc, "lat")$id,
-    dim.inq.nc(nc, timeDimName)$id)
-  names(dimIds) <- c("lon", "lat", timeDimName)
+    dim.inq.nc(nc, timeDim$name)$id)
+  names(dimIds) <- c("lon", "lat", timeDim$name)
   dimNames <- c(
     dim.inq.nc(nc, 0)$name,
     dim.inq.nc(nc, 1)$name,
     dim.inq.nc(nc, 2)$name)
 
-  stopifnot(max(abs(years - round(years))) < sqrt(.Machine$double.eps))
-
   if (!"data" %in% names(.info)) .info$data <- list()
   .info$data[[dataDescriptor$name]] <- lst(
     descriptor = dataDescriptor,
     gridFormat,
-    years,
+    years = timeDim$years,
     labels,
-    timeDimName,
+    timeDimName = timeDim$name,
     dimIds,
     dimNames,
     varDimIds,
-    meta = tidyr::expand_grid(label = labels, year = years))
+    meta = tidyr::expand_grid(label = labels, year = timeDim$years))
 }
 
 
