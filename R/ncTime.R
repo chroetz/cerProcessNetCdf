@@ -38,8 +38,15 @@ getTimeIndicesYear <- function(ncFilePath, timeDimName, year) {
 
 
 
-ncLoadTimeDimension <- function(nc) {
-  timeDimName <- setdiff(dimNames, c("lon", "lat"))
+ncLoadTimeDimension <- function(nc, timeDimName = NULL) {
+
+  # TODO: Assumes calender proleptic_gregorian. Warn if not.
+
+  if (is.null(timeDimName)) {
+    dimNames <- ncGetDimensionNames(nc)
+    timeDimName <- setdiff(dimNames, c("lon", "lat"))
+  }
+
   stopifnot(length(timeDimName) == 1)
   timeValues <- var.get.nc(nc, timeDimName) |> as.vector()
   timeVarInfo <- var.inq.nc(nc, timeDimName)
