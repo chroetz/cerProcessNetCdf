@@ -92,12 +92,13 @@ processYearNaryAggregation <- function(labels, year, regionNames) {
     },
     double(length(.info$aggregateExpressionList)))
   result <- bind_cols(
-    as_tibble(labels),
+    as_tibble(labels) |> dplyr::rename_with(\(x) paste0(x, "_label")),
     tibble(
       year = year,
       region = regionNames),
     as_tibble(t(values))
   )
+  makeDirsIfNecessary(.info$outFilePath)
   cat("Write values to file", .info$outFilePath, "\n")
   readr::write_csv(
     result,
