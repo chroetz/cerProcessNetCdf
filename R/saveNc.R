@@ -19,7 +19,7 @@ saveNetCdf <- function(outFilePath, dimList, valueList, deflate = 9) {
 }
 
 
-initNetCdf <- function(outFilePath, dimList, varNames, deflate = 9) {
+initNetCdf <- function(outFilePath, dimList, varNames, deflate = 9, close = TRUE) {
   outNc <- create.nc(outFilePath, format = "netcdf4", share = FALSE)
   for (i in seq_along(dimList)) {
     dimName <- names(dimList)[i]
@@ -35,7 +35,12 @@ initNetCdf <- function(outFilePath, dimList, varNames, deflate = 9) {
   for (nm in varNames) {
     var.def.nc(outNc, nm, "NC_DOUBLE", names(dimList), deflate = deflate)
   }
-  close.nc(outNc)
+  if (close) {
+    close.nc(outNc)
+    return(NULL)
+  } else {
+    return(outNc)
+  }
 }
 
 

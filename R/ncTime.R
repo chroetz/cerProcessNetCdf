@@ -20,8 +20,11 @@ numericToTime <- function(values, unitText) {
   stopifnot(!any(is.na(match)))
   origin <- lubridate::as_date(match[3])
   times <- switch(match[2],
+    seconds = origin + lubridate::seconds(values),
+    minutes = origin + lubridate::minutes(values),
+    hours = origin + lubridate::hours(values),
     days = origin + lubridate::days(values),
-    months = origin + lubridate::months(values),
+    weeks = origin + lubridate::weeks(values),
     years = origin + lubridate::years(values),
     stop("Unknown time unit: ", match[2])
   )
@@ -71,8 +74,6 @@ ncLoadTimeDimension <- function(nc, timeDimName = NULL) {
   }
 
   if (max(abs(years - round(years))) >= sqrt(.Machine$double.eps)) {
-    cat("PROBLEM in loadDataSingleFile with dataDescriptor\n")
-    print(dataDescriptor)
     stop(
       "Could not correctly transform time dimension to years. Got:\n",
       paste0(years, collapse = ", "),

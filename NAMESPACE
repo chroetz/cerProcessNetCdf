@@ -2,7 +2,9 @@
 
 S3method(format,GridFormat)
 S3method(print,GridFormat)
+export(aggregateAllTime)
 export(aggregateNaryMasked)
+export(concatAfterAggAllTime)
 export(concatAfterRoll)
 export(createGridFormat)
 export(getBoundingBoxesFromMask)
