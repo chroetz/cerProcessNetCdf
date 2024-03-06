@@ -1,0 +1,7 @@
+{
+  "_class": ["LabelFileTimeless", "DataDescriptor", "Opts"],
+  "dirPath": "path/to/dir",
+  "pattern": "fileRegex",
+  "recursive": false,
+  "dataVariableName": null
+}

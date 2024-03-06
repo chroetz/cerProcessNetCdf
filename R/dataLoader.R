@@ -5,6 +5,7 @@ loadData <- function(dataDescriptor) {
     MultiFile = loadDataMultiFile(dataDescriptor),
     YearlyFiles = loadDataYearlyFiles(dataDescriptor),
     SingleFile = loadDataSingleFile(dataDescriptor),
+    LabelFileTimeless = loadDataLabelFileTimeless(dataDescriptor),
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
 
@@ -144,6 +145,58 @@ loadDataYearlyFiles <- function(dataDescriptor) {
 }
 
 
+loadDataLabelFileTimeless <- function(dataDescriptor) {
+  filePaths <- list.files(
+    dataDescriptor$dirPath,
+    pattern = dataDescriptor$pattern,
+    recursive = dataDescriptor$recursive,
+    full.names = TRUE)
+  fileNames <- basename(filePaths)
+  matchMatrix <- str_match(fileNames, dataDescriptor$pattern)
+  if (ncol(matchMatrix) == 1) {
+    fileLabels <- cerUtility::removeFileNameEnding(fileNames)
+  } else {
+    labelParts <- matchMatrix[,1:(ncol(matchMatrix)-1), drop=FALSE]
+    fileLabels <- apply(labelParts, 1, paste, collapse="_")
+  }
+
+  nc <- open.nc(filePaths[1])
+  variableName <- ncGetNonDimVariableNames(nc)
+  if (hasValueString(dataDescriptor$dataVariableName)) {
+    variableName <- intersect(variableName, dataDescriptor$dataVariableName)
+  }
+  stopifnot(length(variableName) == 1)
+  gridFormat <- getNativeGridFormatFromNc(nc, variableName)
+  ncInfo <- file.inq.nc(nc)
+  cat(
+    "Grid format of variable", variableName, ":",
+    format(gridFormat),
+    "\n")
+  varInfo <- var.inq.nc(nc, variableName)
+  varDimIds <- varInfo$dimids
+  dimIds <- c(
+    dim.inq.nc(nc, "lon")$id,
+    dim.inq.nc(nc, "lat")$id)
+  names(dimIds) <- c("lon", "lat")
+  dimNames <- sapply(seq_len(ncInfo$ndims)-1, \(dimid) dim.inq.nc(nc, dimid)$name)
+  close.nc(nc)
+
+  if (!"data" %in% names(.info)) .info$data <- list()
+  .info$data[[dataDescriptor$name]] <- lst(
+      descriptor = dataDescriptor,
+      gridFormat,
+      labels = unique(fileLabels),
+      variableName,
+      dimIds,
+      dimNames,
+      varDimIds,
+      meta = tibble(
+        label = fileLabels,
+        fileName = fileNames,
+        filePath = filePaths))
+}
+
+
 loadDataSingleFile <- function(dataDescriptor) {
 
   nc <- open.nc(dataDescriptor$filePath)
@@ -235,6 +288,7 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
     MultiFile = getDataMultiFile(dataInfo, year, label, bbInfoScaled),
     YearlyFiles = getDataYearlyFiles(dataInfo, year, label, bbInfoScaled),
     SingleFile = getDataSingleFile(dataInfo, year, label, bbInfoScaled),
+    LabelFileTimeless = getDataLabelFileTimeless(dataInfo, year, label, bbInfoScaled),
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
 
@@ -308,6 +362,53 @@ getDataYearlyFiles <- function(dataInfo, year, label, bbInfo = NULL) {
 
   # NOTE: using filter() here seems a bit slow
   sel <- dataInfo$meta$year == year & dataInfo$meta$label == label
+  info <- dataInfo$meta[sel,]
+  stopifnot(nrow(info) == 1)
+
+  if (hasValue(bbInfo)) {
+    # TODO: convert bbox format to data format
+    lonLatStart <- c(
+      bbInfo$min_lon,
+      bbInfo$min_lat)
+    lonLatCount <- c(
+      bbInfo$max_lon - bbInfo$min_lon + 1,
+      bbInfo$max_lat - bbInfo$min_lat + 1)
+  } else {
+    lonLatStart <- c(1, 1)
+    lonLatCount <- c(NA, NA)
+  }
+  start <- permuteDimIdsLonLat(dataInfo, lonLatStart)
+  count <- permuteDimIdsLonLat(dataInfo, lonLatCount)
+
+  nc <- open.nc(info$filePath)
+  data <- var.get.nc(
+    nc,
+    dataInfo$variableName,
+    start = start,
+    count = count,
+    collapse = FALSE)
+  close.nc(nc)
+
+  if (dataInfo$descriptor$setNaToZero) {
+    data <- ifelse(is.na(data), 0, data)
+  }
+
+  # Set correct dimnames of data
+  dimNames <- dataInfo$dimNames[dataInfo$varDimIds+1]
+  dimNames <- dimNames[dimNames %in% c("lon", "lat")]
+  dimNameList <- list(NULL, NULL)
+  names(dimNameList) <- dimNames
+  dimnames(data) <- dimNameList
+
+  return(data)
+}
+
+
+
+getDataLabelFileTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
+
+  # NOTE: using filter() here seems a bit slow
+  sel <- dataInfo$meta$label == label
   info <- dataInfo$meta[sel,]
   stopifnot(nrow(info) == 1)
 
@@ -437,7 +538,9 @@ getDataYears <- function(name) {
 
 getDataYearsAll <- function() {
   yearsList <- lapply(names(.info$data), getDataYears)
-  years <- Reduce(intersect, yearsList)
+  years <- Reduce(
+    \(x, y) if (is.null(y)) x else intersect(x, y),
+    yearsList)
   return(years)
 }
 
@@ -446,6 +549,9 @@ getDataLabelsAndYearsAll <- function(yearsFilter) {
   nms <- names(.info$data)
   labelsAndYearsList <- lapply(nms, getDataLabelsAndYears, yearsFilter)
   names(labelsAndYearsList) <- nms
+  isWithYear <- sapply(labelsAndYearsList, \(x) "years" %in% names(x))
+  labelsAndYearsList <- labelsAndYearsList[isWithYear]
+  nms <- nms[isWithYear]
   for (nm in nms) {
     names(labelsAndYearsList[[nm]])[names(labelsAndYearsList[[nm]]) == "label"] <- nm
   }
@@ -458,11 +564,19 @@ getDataLabelsAndYearsAll <- function(yearsFilter) {
 
 
 getDataLabelsAndYears <- function(name, yearsFilter) {
-  labelsAndYears <-
-    .info$data[[name]]$meta |>
-    select(.data$label, .data$year)
-  if (hasValue(yearsFilter)) {
-    labelsAndYears <- filter(labelsAndYears, .data$year %in% yearsFilter)
+  info <- .info$data[[name]]$meta
+  isTimeless <- "years" %in% names(info)
+  if (isTimeless) {
+    labelsAndYears <-
+      info |>
+      select(.data$label)
+  } else {
+    labelsAndYears <-
+      info |>
+      select(.data$label, .data$year)
+    if (hasValue(yearsFilter)) {
+      labelsAndYears <- filter(labelsAndYears, .data$year %in% yearsFilter)
+    }
   }
   return(labelsAndYears)
 }
