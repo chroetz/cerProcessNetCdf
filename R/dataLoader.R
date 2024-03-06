@@ -21,8 +21,6 @@ loadDataMultiFile <- function(dataDescriptor) {
     full.names = TRUE)
   fileNames <- basename(filePaths)
 
-  print(filePaths)
-
   nc <- open.nc(filePaths[1])
   labels <- ncGetNonDimVariableNames(nc)
   if (hasValueString(dataDescriptor$dataVariableNames)) {
