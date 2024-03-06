@@ -21,6 +21,8 @@ concatAfterAggAllTime <- function(
   outNc <- initNetCdf(outFilePath, dimList, varNames, deflate, close=FALSE)
 
   for (info in meta) {
+    cat("Processing lat range", info$lat[1], "to", info$lat[length(info$lat)], "...")
+    pt <- proc.time()
     nc <- open.nc(info$filePath)
     data <- read.nc(nc)
     close.nc(nc)
@@ -30,6 +32,7 @@ concatAfterAggAllTime <- function(
     for (nm in varNames) {
       var.put.nc(outNc, nm, data[[nm]], start = start, count = count)
     }
+    cat("done after", (proc.time()-pt)[3], "s\n")
   }
   close.nc(outNc)
 
