@@ -280,7 +280,7 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
   if (length(label) != 1) {
     cat("\ndataInfo$labels:\n")
     dataInfo$labels |> print()
-    cat("\label:\n")
+    cat("\nlabel:\n")
     label |> print()
     stop("label in getData is not a single value")
   }
