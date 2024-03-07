@@ -559,6 +559,11 @@ getDataLabelsAndYearsAll <- function(yearsFilter) {
   for (nm in nms[-1]) {
     labelsAndYears <- inner_join(labelsAndYears, labelsAndYearsList[[nm]], join_by(year))
   }
+  if (NROW(labelsAndYears) == 0) {
+    cat("\ngetDataLabelsAndYearsAll(): labelsAndYearsList:\n")
+    print(labelsAndYearsList)
+    stop("No data found for the given years")
+  }
   return(labelsAndYears)
 }
 
