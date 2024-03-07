@@ -565,18 +565,18 @@ getDataLabelsAndYearsAll <- function(yearsFilter) {
 
 getDataLabelsAndYears <- function(name, yearsFilter) {
   info <- .info$data[[name]]$meta
-  isTimeless <- "years" %in% names(info)
-  if (isTimeless) {
-    labelsAndYears <-
-      info |>
-      select(.data$label)
-  } else {
+  hasTime <- "years" %in% names(info)
+  if (hasTime) {
     labelsAndYears <-
       info |>
       select(.data$label, .data$year)
     if (hasValue(yearsFilter)) {
       labelsAndYears <- filter(labelsAndYears, .data$year %in% yearsFilter)
     }
+  } else {
+    labelsAndYears <-
+      info |>
+      select(.data$label)
   }
   return(labelsAndYears)
 }
