@@ -77,7 +77,7 @@ processYearNaryAggregation <- function(labels, year, regionNames) {
       assignDataAll(year, labels, dataEnv, bbInfo)
       maskValues <- getMaskValues(regionName, .info$maskList, bbInfo)
       if (hasValue(.info$maskSum)) {
-        maskSumValues <- subsetBox(.info$maskSum$maskSum, bbInfo) # TODO respect target format
+        maskSumValues <- subsetBox(.info$maskSum, bbInfo)
         dataEnv$mask <- maskValues / maskSumValues
         dataEnv$mask[maskSumValues == 0] <- 0
       } else {

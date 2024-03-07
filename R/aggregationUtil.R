@@ -135,10 +135,16 @@ readMaskSum <- function(filePath) {
   nc <- openNc(filePath)
   on.exit(close.nc(nc))
 
-  .info$maskSum <- read.nc(nc)
+  gridFormat <- getNativeGridFormatFromNc(nc)
   cat(
     "Grid format of mask sum:",
-    format(getNativeGridFormatFromNc(nc)),
+    format(gridFormat),
     "\n")
+  maskSum <- var.get.nc(nc, "maskSum")
+
+  .info$maskSum <- ensureGridFormat(
+    maskSum,
+    .info$maskList$gridFormat,
+    gridFormat)
 }
 
