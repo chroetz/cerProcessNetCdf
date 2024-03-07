@@ -275,7 +275,7 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
     label <- dataInfo$labels
   }
   if (length(label) > 1) {
-    label <- intersecct(label, dataInfo$labels)
+    label <- intersect(label, dataInfo$labels)
   }
   stopifnot(length(label) == 1)
 
