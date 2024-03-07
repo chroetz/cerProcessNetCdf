@@ -277,7 +277,13 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
   if (length(label) > 1) {
     label <- intersect(label, dataInfo$labels)
   }
-  stopifnot(length(label) == 1)
+  if (length(label) != 1) {
+    cat("\ndataInfo$labels:\n")
+    dataInfo$labels |> print()
+    cat("\label:\n")
+    label |> print()
+    stop("label in getData is not a single value")
+  }
 
   if (hasValue(bbInfo)) {
 
