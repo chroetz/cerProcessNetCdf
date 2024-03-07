@@ -158,7 +158,7 @@ loadDataLabelFileTimeless <- function(dataDescriptor) {
   if (ncol(matchMatrix) == 1) {
     fileLabels <- cerUtility::removeFileNameEnding(fileNames)
   } else {
-    labelParts <- matchMatrix[,1:(ncol(matchMatrix)-1), drop=FALSE]
+    labelParts <- matchMatrix[,2:ncol(matchMatrix), drop=FALSE]
     fileLabels <- apply(labelParts, 1, paste, collapse="_")
   }
 
@@ -274,8 +274,14 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
   if(!hasValue(label)) {
     label <- dataInfo$labels
   }
-  if (length(label) > 1) {
-    label <- intersect(label, dataInfo$labels)
+  if (length(label) > 1) { # Find best matching label
+    labelIntersect <- intersect(label, dataInfo$labels)
+    if (length(labelIntersect)==1) {
+      label <- labelIntersect
+    } else {
+      labels <- stringr::str_split(label, "_") |> unlist()
+      label <- intersect(labels, dataInfo$labels)
+    }
   }
   if (length(label) != 1) {
     cat("\ndataInfo$labels:\n")
