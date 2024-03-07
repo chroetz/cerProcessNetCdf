@@ -76,6 +76,7 @@ loadDataMultiFile <- function(dataDescriptor) {
   if (!"data" %in% names(.info)) .info$data <- list()
   .info$data[[dataDescriptor$name]] <- lst(
       descriptor = dataDescriptor,
+      joinByLabel = FALSE,
       gridFormat,
       years = years,
       labels = labels,
@@ -130,6 +131,7 @@ loadDataYearlyFiles <- function(dataDescriptor) {
   if (!"data" %in% names(.info)) .info$data <- list()
   .info$data[[dataDescriptor$name]] <- lst(
       descriptor = dataDescriptor,
+      joinByLabel = FALSE,
       gridFormat,
       years = unique(fileYears),
       labels = unique(fileLabels),
@@ -184,6 +186,7 @@ loadDataLabelFileTimeless <- function(dataDescriptor) {
   if (!"data" %in% names(.info)) .info$data <- list()
   .info$data[[dataDescriptor$name]] <- lst(
       descriptor = dataDescriptor,
+      joinByLabel = TRUE,
       gridFormat,
       labels = unique(fileLabels),
       variableName,
@@ -255,7 +258,11 @@ getDataAll <- function(year, label = NULL, bbInfo = NULL) {
 assignDataAll <- function(year, labels, env, bbInfo = NULL) {
   lapply(
     names(.info$data),
-    \(name) env[[name]] <- getData(name, year, labels[[name]], bbInfo))
+    \(name) env[[name]] <- getData(
+      name,
+      year,
+      if (.info$data[[name]]$joinByLabel) labels else labels[[name]],
+      bbInfo))
   return(invisible())
 }
 
@@ -266,6 +273,9 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
 
   if(!hasValue(label)) {
     label <- dataInfo$labels
+  }
+  if (length(label) > 1) {
+    label <- intersecct(label, dataInfo$labels)
   }
   stopifnot(length(label) == 1)
 
