@@ -36,6 +36,9 @@ aggregateNaryMasked <- function(
   cat(length(regionNames), "regions to process.\n")
 
   labelsAndYears <- getDataLabelsAndYearsAll(yearsFilter)
+  cat("\n labelsAndYears: \n")
+  print(labelsAndYears)
+  cat("\n")
   batch <- cerUtility::splitAndGetOneBatch(
     "label-year-combinations",
     seq_len(nrow(labelsAndYears)),

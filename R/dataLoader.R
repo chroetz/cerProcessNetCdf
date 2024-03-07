@@ -549,7 +549,7 @@ getDataLabelsAndYearsAll <- function(yearsFilter) {
   nms <- names(.info$data)
   labelsAndYearsList <- lapply(nms, getDataLabelsAndYears, yearsFilter)
   names(labelsAndYearsList) <- nms
-  isWithYear <- sapply(labelsAndYearsList, \(x) "years" %in% names(x))
+  isWithYear <- sapply(labelsAndYearsList, \(x) "year" %in% names(x))
   labelsAndYearsList <- labelsAndYearsList[isWithYear]
   nms <- nms[isWithYear]
   for (nm in nms) {
