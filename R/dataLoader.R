@@ -235,6 +235,7 @@ loadDataSingleFile <- function(dataDescriptor) {
 
   if (!"data" %in% names(.info)) .info$data <- list()
   .info$data[[dataDescriptor$name]] <- lst(
+    joinByLabel = FALSE,
     descriptor = dataDescriptor,
     gridFormat,
     years = timeDim$years,
@@ -258,11 +259,14 @@ getDataAll <- function(year, label = NULL, bbInfo = NULL) {
 assignDataAll <- function(year, labels, env, bbInfo = NULL) {
   lapply(
     names(.info$data),
-    \(name) env[[name]] <- getData(
-      name,
-      year,
-      if (.info$data[[name]]$joinByLabel) labels else labels[[name]],
-      bbInfo))
+    \(name) {
+      lbls <- if (.info$data[[name]]$joinByLabel) labels else labels[[name]]
+      env[[name]] <- getData(
+        name,
+        year,
+        lbls,
+        bbInfo)
+    })
   return(invisible())
 }
 
