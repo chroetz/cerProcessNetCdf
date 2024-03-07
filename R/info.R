@@ -1,6 +1,6 @@
 #' @export
 getNcInfo <- function(filePath) {
-  nc <- open.nc(filePath)
+  nc <- openNc(filePath)
   ncInfo <- file.inq.nc(nc)
   dimInfo <- lapply(seq_len(ncInfo$ndims)-1, dim.inq.nc, ncfile = nc)
   varInfo <- lapply(seq_len(ncInfo$nvars)-1, var.inq.nc, ncfile = nc)

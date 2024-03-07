@@ -71,7 +71,7 @@ concatAfterRoll <- function(
 getNetCdfDimensionMeta <- function(filePaths) {
 
   meta <- lapply(filePaths, \(filePath) {
-    nc <- open.nc(filePath)
+    nc <- openNc(filePath)
     res <- list(
       filePath = filePath,
       varName = ncGetNonDimVariableNames(nc),
@@ -110,7 +110,7 @@ getAllForTimes <- function(meta, timeValues) {
     }
     start <- c(1, 1, min(timeIdx))
     count <- c(NA, NA, length(timeIdx))
-    nc <- open.nc(m$filePath)
+    nc <- openNc(m$filePath)
     data <- var.get.nc(
       nc,
       m$varName,

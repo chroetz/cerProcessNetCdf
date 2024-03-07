@@ -65,7 +65,7 @@ reverseIndex <- function(from, to, len) {
 
 openAndCheckMaskFile <- function(filePath) {
   maskList <- list()
-  nc <- open.nc(filePath)
+  nc <- openNc(filePath)
   maskList$nc <- nc
   maskList$lonValues <- var.get.nc(nc, "lon") |> as.vector()
   maskList$latValues <- var.get.nc(nc, "lat") |> as.vector()
@@ -107,7 +107,7 @@ getMaskValues <- function(regionName, maskList, bbInfo = NULL) {
 
 
 readBoundingBoxes <- function(filePath) {
-  nc <- open.nc(filePath)
+  nc <- openNc(filePath)
   on.exit(close.nc(nc))
   bb <- read.nc(nc)
   bbFormat <- getNativeGridFormatFromNc(nc, onlyLonLat=TRUE)
@@ -132,7 +132,7 @@ readBoundingBoxes <- function(filePath) {
 
 
 readMaskSum <- function(filePath) {
-  nc <- open.nc(filePath)
+  nc <- openNc(filePath)
   on.exit(close.nc(nc))
 
   .info$maskSum <- read.nc(nc)

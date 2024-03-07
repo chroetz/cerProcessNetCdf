@@ -53,7 +53,7 @@ initCopyNetCdf <- function(outFilePath, sourceFilePath, deflate = 9, ...) {
   cat("Creating output file", outFilePath, "... ")
 
   outNc <- create.nc(outFilePath, format = "netcdf4")
-  nc <- open.nc(sourceFilePath)
+  nc <- openNc(sourceFilePath)
 
   fileInq <- file.inq.nc(nc)
   dimNames <- ncGetDimensionNames(nc)

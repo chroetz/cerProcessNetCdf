@@ -1,5 +1,5 @@
 getFileTimes <- function(ncFilePath, timeDimName) {
-  nc <- open.nc(ncFilePath)
+  nc <- openNc(ncFilePath)
   times <- getNcTimes(nc, timeDimName)
   close.nc(nc)
   return(times)

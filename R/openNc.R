@@ -41,3 +41,9 @@ ncGetDimensionIndex <- function(openNc, dimName) {
   stopifnot(length(idx) == 1)
   return(idx)
 }
+
+
+openNc <- function(filePath) {
+  if (!file.exists(filePath)) stop(filePath, " does not exist")
+  open.nc(filePath)
+}

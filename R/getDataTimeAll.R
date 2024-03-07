@@ -72,7 +72,7 @@ getDataTimeAllMultiFileOneFile <- function(filePath, dataInfo, label, lotIdx, li
   start <- permuteDimIdsLonLatTime(dataInfo, lonLatTimeStart)
   count <- permuteDimIdsLonLatTime(dataInfo, lonLatTimeCount)
 
-  nc <- open.nc(filePath)
+  nc <- openNc(filePath)
   data <- var.get.nc(
     nc,
     label,

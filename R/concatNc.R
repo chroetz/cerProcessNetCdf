@@ -9,7 +9,7 @@ runConcatNetCdf <- function(
   cat("Found", length(inFileNames), "files.\n")
 
   # Assume all files have the same dims (in the same order).
-  firstInNc <- open.nc(file.path(inDirPath, inFileNames[1]))
+  firstInNc <- openNc(file.path(inDirPath, inFileNames[1]))
   fileInfo <- file.inq.nc(firstInNc)
   cat("Create output file.\n")
   outNc <- create.nc(outFilePath, format = "netcdf4", share = FALSE, prefill = FALSE)
@@ -40,7 +40,7 @@ runConcatNetCdf <- function(
 
     pt <- proc.time()
     cat("Processing", fileName, "\n")
-    inNc <- open.nc(file.path(inDirPath, fileName))
+    inNc <- openNc(file.path(inDirPath, fileName))
     varNames <- ncGetNonDimVariableNames(inNc)
 
     # copy variables from inNc to outNc (requires dims to have the same order as in firstNc)

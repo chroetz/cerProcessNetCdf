@@ -23,7 +23,7 @@ concatAfterAggAllTime <- function(
   for (info in meta) {
     cat("Processing lat range", info$lat[1], "to", info$lat[length(info$lat)], "...")
     pt <- proc.time()
-    nc <- open.nc(info$filePath)
+    nc <- openNc(info$filePath)
     data <- read.nc(nc)
     close.nc(nc)
     latIdxs <- which(lats %in% info$lat)
@@ -42,7 +42,7 @@ concatAfterAggAllTime <- function(
 getNetCdfLatLonMeta <- function(filePaths, latDecreasing=FALSE) {
 
   meta <- lapply(filePaths, \(filePath) {
-    nc <- open.nc(filePath)
+    nc <- openNc(filePath)
     res <- list(
       filePath = filePath,
       varName = ncGetNonDimVariableNames(nc),

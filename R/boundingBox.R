@@ -6,7 +6,7 @@ saveBoundingBoxes <- function(
     regionVariableName = "regionName"
   ) {
 
-  maskNc <- open.nc(maskFilePath)
+  maskNc <- openNc(maskFilePath)
   on.exit(close.nc(maskNc))
 
   outNc <- create.nc(outFilePath, format = "netcdf4", share = FALSE)
@@ -46,7 +46,7 @@ saveBoundingBoxes <- function(
 
 #' @export
 getBoundingBoxesFromMask <- function(path) {
-  nc <- open.nc(path)
+  nc <- openNc(path)
   on.exit(close.nc(nc))
   fileInfo <- file.inq.nc(nc)
   stopifnot(fileInfo$ndims == 2)

@@ -86,8 +86,7 @@ initializeGrid <- function(targetFormat) {
 
 #' @export
 getNativeGridFormatFromFile <- function(filePath, variableName = NULL, onlyLonLat = FALSE) {
-  if (!file.exists(filePath)) stop(filePath, " does not exist")
-  nc <- open.nc(filePath)
+  nc <- openNc(filePath)
   on.exit(close.nc(nc))
   return(getNativeGridFormatFromNc(nc, variableName, onlyLonLat))
 }
