@@ -547,7 +547,8 @@ getDataYearsAll <- function() {
 
 getDataLabelsAndYearsAll <- function(yearsFilter) {
   nms <- names(.info$data)
-  labelsAndYearsList <- lapply(nms, getDataLabelsAndYears, yearsFilter)
+  labelsAndYearsListAll <- lapply(nms, getDataLabelsAndYears, yearsFilter)
+  labelsAndYearsList <- labelsAndYearsListAll
   names(labelsAndYearsList) <- nms
   isWithYear <- sapply(labelsAndYearsList, \(x) "year" %in% names(x))
   labelsAndYearsList <- labelsAndYearsList[isWithYear]
@@ -560,8 +561,8 @@ getDataLabelsAndYearsAll <- function(yearsFilter) {
     labelsAndYears <- inner_join(labelsAndYears, labelsAndYearsList[[nm]], join_by(year))
   }
   if (NROW(labelsAndYears) == 0) {
-    cat("\ngetDataLabelsAndYearsAll(): labelsAndYearsList:\n")
-    print(labelsAndYearsList)
+    cat("\ngetDataLabelsAndYearsAll(): labelsAndYearsListAll:\n")
+    print(labelsAndYearsListAll)
     stop("No data found for the given years")
   }
   return(labelsAndYears)
