@@ -571,7 +571,7 @@ getDataLabelsAndYearsAll <- function(yearsFilter) {
 
 getDataLabelsAndYears <- function(name, yearsFilter) {
   info <- .info$data[[name]]$meta
-  hasTime <- "years" %in% names(info)
+  hasTime <- "year" %in% names(info)
   if (hasTime) {
     labelsAndYears <-
       info |>
