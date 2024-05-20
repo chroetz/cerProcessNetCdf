@@ -15,7 +15,7 @@ concatAfterAggAllTime <- function(
   varNames <- meta[[1]]$varName
   lons <- meta[[1]]$lon
   lats <- lapply(meta, \(m) m$lat) |> unlist()
-  stopifnot(order(lats) == seq_along(lats))
+  stopifnot(order(lats, decreasing=TRUE) == seq_along(lats)) # TODO: assumes lat order decreasing
 
   dimList <- list(lon = lons, lat = lats)
   outNc <- initNetCdf(outFilePath, dimList, varNames, deflate, close=FALSE)
