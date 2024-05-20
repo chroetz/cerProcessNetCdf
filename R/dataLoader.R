@@ -698,10 +698,10 @@ getDataLabelsAndYearsAll <- function(yearsFilter) {
       if ("year" %in% names(labelsAndYears)) {
         labelsAndYears <- inner_join(labelsAndYears, labelsAndYearsList[[nm]], join_by(year))
       } else {
-        labelsAndYears <- expand_grid(labelsAndYears, labelsAndYearsList[[nm]])
+        labelsAndYears <- tidyr::expand_grid(labelsAndYears, labelsAndYearsList[[nm]])
       }
     } else {
-      labelsAndYears <- expand_grid(labelsAndYears, labelsAndYearsList[[nm]])
+      labelsAndYears <- tidyr::expand_grid(labelsAndYears, labelsAndYearsList[[nm]])
     }
   }
   if (NROW(labelsAndYears) == 0) {
