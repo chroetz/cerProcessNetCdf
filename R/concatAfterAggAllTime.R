@@ -11,7 +11,7 @@ concatAfterAggAllTime <- function(
     pattern = pattern,
     full.names = TRUE)
 
-  meta <- getNetCdfLatLonMeta(filePaths)
+  meta <- getNetCdfLatLonMeta(filePaths, latDecreasing = TRUE) # TODO: assumes lat order decreasing
   varNames <- meta[[1]]$varName
   lons <- meta[[1]]$lon
   lats <- lapply(meta, \(m) m$lat) |> unlist()
@@ -39,7 +39,7 @@ concatAfterAggAllTime <- function(
   return(invisible(NULL))
 }
 
-getNetCdfLatLonMeta <- function(filePaths, latDecreasing=FALSE) {
+getNetCdfLatLonMeta <- function(filePaths, latDecreasing) {
 
   meta <- lapply(filePaths, \(filePath) {
     nc <- openNc(filePath)
