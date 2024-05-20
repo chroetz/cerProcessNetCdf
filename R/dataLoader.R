@@ -5,6 +5,7 @@ loadData <- function(dataDescriptor) {
     MultiFile = loadDataMultiFile(dataDescriptor),
     YearlyFiles = loadDataYearlyFiles(dataDescriptor),
     SingleFile = loadDataSingleFile(dataDescriptor),
+    SingleFileTimeless = loadDataSingleFileTimeless(dataDescriptor),
     LabelFileTimeless = loadDataLabelFileTimeless(dataDescriptor),
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
@@ -257,6 +258,49 @@ loadDataSingleFile <- function(dataDescriptor) {
 }
 
 
+loadDataSingleFileTimeless <- function(dataDescriptor) {
+
+  nc <- openNc(dataDescriptor$filePath)
+  on.exit(close.nc(nc))
+
+  dimNames <- ncGetDimensionNames(nc)
+
+  labels <- ncGetNonDimVariableNames(nc)
+  if (hasValueString(dataDescriptor$dataVariableNames)) {
+    labels <- intersect(labels, dataDescriptor$dataVariableNames)
+  }
+  gridFormat <- getNativeGridFormatFromNc(nc, labels[1])
+  cat(
+    "Grid format of variable", labels[1], ":",
+    format(gridFormat),
+    "\n")
+  if (length(labels) > 1) {
+    cat("WARNING: Found more than one variable in file. Assume they all have the same grid format\n")
+  }
+
+  varInfo <- var.inq.nc(nc, labels[1])
+  varDimIds <- varInfo$dimids
+  dimIds <- c(
+    dim.inq.nc(nc, "lon")$id,
+    dim.inq.nc(nc, "lat")$id)
+  names(dimIds) <- c("lon", "lat")
+  dimNames <- c(
+    dim.inq.nc(nc, 0)$name,
+    dim.inq.nc(nc, 1)$name)
+
+  if (!"data" %in% names(.info)) .info$data <- list()
+  .info$data[[dataDescriptor$name]] <- lst(
+    joinByLabel = TRUE,
+    descriptor = dataDescriptor,
+    gridFormat,
+    labels,
+    dimIds,
+    dimNames,
+    varDimIds,
+    meta = tidyr::expand_grid(label = labels))
+}
+
+
 getDataAll <- function(year, label = NULL, bbInfo = NULL) {
   data <- lapply(
     names(.info$data),
@@ -323,6 +367,7 @@ getData <- function(name, year, label = NULL, bbInfo = NULL) {
     MultiFile = getDataMultiFile(dataInfo, year, label, bbInfoScaled),
     YearlyFiles = getDataYearlyFiles(dataInfo, year, label, bbInfoScaled),
     SingleFile = getDataSingleFile(dataInfo, year, label, bbInfoScaled),
+    SingleFileTimeless = getDataSingleFileTimeless(dataInfo, year, label, bbInfoScaled),
     LabelFileTimeless = getDataLabelFileTimeless(dataInfo, year, label, bbInfoScaled),
     stop("Unknown DataDescriptor subclass: ", subclass)
   )
@@ -469,6 +514,49 @@ getDataLabelFileTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
     start = start,
     count = count,
     collapse = FALSE)
+  close.nc(nc)
+
+  if (dataInfo$descriptor$setNaToZero) {
+    data <- ifelse(is.na(data), 0, data)
+  }
+
+  # Set correct dimnames of data
+  dimNames <- dataInfo$dimNames[dataInfo$varDimIds+1]
+  dimNames <- dimNames[dimNames %in% c("lon", "lat")]
+  dimNameList <- list(NULL, NULL)
+  names(dimNameList) <- dimNames
+  dimnames(data) <- dimNameList
+
+  return(data)
+}
+
+
+getDataSingleTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
+
+  if (hasValue(bbInfo)) {
+    # TODO: convert bbox format to data format
+    lonLatStart <- c(
+      bbInfo$min_lon,
+      bbInfo$min_lat)
+    lonLatCount <- c(
+      bbInfo$max_lon - bbInfo$min_lon + 1,
+      bbInfo$max_lat - bbInfo$min_lat + 1)
+  } else {
+    lonLatStart <- c(1, 1)
+    lonLatCount <- c(NA, NA)
+  }
+  start <- permuteDimIdsLonLat(dataInfo, lonLatStart)
+  count <- permuteDimIdsLonLat(dataInfo, lonLatCount)
+
+  nc <- openNc(dataInfo$descriptor$filePath)
+
+  data <- var.get.nc(
+    nc,
+    label,
+    start = start,
+    count = count,
+    collapse = FALSE
+  )
   close.nc(nc)
 
   if (dataInfo$descriptor$setNaToZero) {
