@@ -20,6 +20,9 @@ loadDataMultiFile <- function(dataDescriptor) {
     pattern = dataDescriptor$pattern,
     recursive = dataDescriptor$recursive,
     full.names = TRUE)
+  if (length(filePaths) == 0) {
+    stop("No files found with DataDescriptor:", formatDataDesctiptor(dataDescriptor))
+  }
   fileNames <- basename(filePaths)
 
   nc <- openNc(filePaths[1])
@@ -96,6 +99,9 @@ loadDataYearlyFiles <- function(dataDescriptor) {
     pattern = dataDescriptor$pattern,
     recursive = dataDescriptor$recursive,
     full.names = TRUE)
+  if (length(filePaths) == 0) {
+    stop("No files found with DataDescriptor:", formatDataDesctiptor(dataDescriptor))
+  }
   fileNames <- basename(filePaths)
   matchMatrix <- str_match(fileNames, dataDescriptor$pattern)
   # Assume that the last capture group is the year
@@ -153,6 +159,9 @@ loadDataLabelFileTimeless <- function(dataDescriptor) {
     pattern = dataDescriptor$pattern,
     recursive = dataDescriptor$recursive,
     full.names = TRUE)
+  if (length(filePaths) == 0) {
+    stop("No files found with DataDescriptor:", formatDataDesctiptor(dataDescriptor))
+  }
   fileNames <- basename(filePaths)
   matchMatrix <- str_match(fileNames, dataDescriptor$pattern)
   if (ncol(matchMatrix) == 1) {
@@ -643,3 +652,8 @@ blowUp <- function(x, blowUpLon, blowUpLat, bbInfo, bbInfoScaled) {
 }
 
 
+formatDataDesctiptor <- function(dd) {
+  sprintf(
+    "path: $s, pattern: %s, recrusive: %s",
+    dd$dirPath, dd$pattern, as.character(dd$recursive))
+}
