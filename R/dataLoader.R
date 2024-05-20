@@ -654,6 +654,6 @@ blowUp <- function(x, blowUpLon, blowUpLat, bbInfo, bbInfoScaled) {
 
 formatDataDesctiptor <- function(dd) {
   sprintf(
-    "path: $s, pattern: %s, recrusive: %s",
+    "path: %s, pattern: %s, recrusive: %s",
     dd$dirPath, dd$pattern, as.character(dd$recursive))
 }
