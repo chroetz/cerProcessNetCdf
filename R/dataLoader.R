@@ -536,7 +536,7 @@ getDataLabelFileTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
 }
 
 
-getDataSingleTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
+getDataSingleFileTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
 
   if (hasValue(bbInfo)) {
     # TODO: convert bbox format to data format
