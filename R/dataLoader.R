@@ -81,6 +81,7 @@ loadDataMultiFile <- function(dataDescriptor) {
   .info$data[[dataDescriptor$name]] <- lst(
       descriptor = dataDescriptor,
       joinByLabel = FALSE,
+      expandsLabel = FALSE, # TODO: make option of DataDescriptor
       gridFormat,
       years = years,
       labels = labels,
@@ -139,6 +140,7 @@ loadDataYearlyFiles <- function(dataDescriptor) {
   .info$data[[dataDescriptor$name]] <- lst(
       descriptor = dataDescriptor,
       joinByLabel = FALSE,
+      expandsLabel = FALSE, # TODO: make option of DataDescriptor
       gridFormat,
       years = unique(fileYears),
       labels = unique(fileLabels),
@@ -197,6 +199,7 @@ loadDataLabelFileTimeless <- function(dataDescriptor) {
   .info$data[[dataDescriptor$name]] <- lst(
       descriptor = dataDescriptor,
       joinByLabel = TRUE,
+      expandsLabel = FALSE, # TODO: make option of DataDescriptor
       gridFormat,
       labels = unique(fileLabels),
       variableName,
@@ -246,6 +249,7 @@ loadDataSingleFile <- function(dataDescriptor) {
   if (!"data" %in% names(.info)) .info$data <- list()
   .info$data[[dataDescriptor$name]] <- lst(
     joinByLabel = FALSE,
+    expandsLabel = TRUE, # TODO: make option of DataDescriptor
     descriptor = dataDescriptor,
     gridFormat,
     years = timeDim$years,
@@ -291,6 +295,7 @@ loadDataSingleFileTimeless <- function(dataDescriptor) {
   if (!"data" %in% names(.info)) .info$data <- list()
   .info$data[[dataDescriptor$name]] <- lst(
     joinByLabel = TRUE,
+    expandsLabel = TRUE, # TODO: make option of DataDescriptor
     descriptor = dataDescriptor,
     gridFormat,
     labels,
@@ -671,17 +676,26 @@ getDataYearsAll <- function() {
 getDataLabelsAndYearsAll <- function(yearsFilter) {
   nms <- names(.info$data)
   labelsAndYearsListAll <- lapply(nms, getDataLabelsAndYears, yearsFilter)
+  expandsLabel <- sapply(nms, \(nm) .info$data$expandsLabel)
   labelsAndYearsList <- labelsAndYearsListAll
   names(labelsAndYearsList) <- nms
-  isWithYear <- sapply(labelsAndYearsList, \(x) "year" %in% names(x))
-  labelsAndYearsList <- labelsAndYearsList[isWithYear]
-  nms <- nms[isWithYear]
+  labelsAndYearsList <- labelsAndYearsList[expandsLabel]
+  nms <- nms[expandsLabel]
   for (nm in nms) {
     names(labelsAndYearsList[[nm]])[names(labelsAndYearsList[[nm]]) == "label"] <- nm
   }
   labelsAndYears <- labelsAndYearsList |> first()
   for (nm in nms[-1]) {
-    labelsAndYears <- inner_join(labelsAndYears, labelsAndYearsList[[nm]], join_by(year))
+    isWithYear <- "year" %in% labelsAndYearsList[[nm]]
+    if (isWithYear) {
+      if ("year" %in% names(labelsAndYears)) {
+        labelsAndYears <- inner_join(labelsAndYears, labelsAndYearsList[[nm]], join_by(year))
+      } else {
+        labelsAndYears <- expand_grid(labelsAndYears, labelsAndYearsList[[nm]])
+      }
+    } else {
+      labelsAndYears <- expand_grid(labelsAndYears, labelsAndYearsList[[nm]])
+    }
   }
   if (NROW(labelsAndYears) == 0) {
     cat("\ngetDataLabelsAndYearsAll(): labelsAndYearsListAll:\n")
