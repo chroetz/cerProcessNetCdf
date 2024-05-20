@@ -294,7 +294,7 @@ loadDataSingleFileTimeless <- function(dataDescriptor) {
 
   if (!"data" %in% names(.info)) .info$data <- list()
   .info$data[[dataDescriptor$name]] <- lst(
-    joinByLabel = TRUE,
+    joinByLabel = FALSE,
     expandLabel = TRUE, # TODO: make option of DataDescriptor
     descriptor = dataDescriptor,
     gridFormat,
@@ -537,6 +537,11 @@ getDataLabelFileTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
 
 
 getDataSingleFileTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
+
+  if (!(is.character(label) || is.numeric(label))) {
+    print(label)
+    stop("getDataSingleFileTimeless needs a suitable label to select the variable in the nc file")
+  }
 
   if (hasValue(bbInfo)) {
     # TODO: convert bbox format to data format
