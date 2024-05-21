@@ -98,7 +98,7 @@ processYearNaryAggregation <- function(labels, year, regionNames) {
     unlist(valueList),
     ncol = length(.info$aggregateExpressionList),
     byrow = TRUE)
-  colnames(value) <- names(.info$aggregateExpressionList)
+  colnames(values) <- names(.info$aggregateExpressionList)
   result <- bind_cols(
     as_tibble(labels) |> dplyr::rename_with(\(x) paste0(x, "_label")),
     tibble(
