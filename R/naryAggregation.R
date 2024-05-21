@@ -104,7 +104,7 @@ processYearNaryAggregation <- function(labels, year, regionNames) {
     tibble(
       year = year,
       region = regionNames),
-    as_tibble(t(values))
+    as_tibble(values)
   )
   makeDirsIfNecessary(.info$outFilePath)
   cat("Write values to file", .info$outFilePath, "\n")
