@@ -67,7 +67,7 @@ aggregateNaryMasked <- function(
 processYearNaryAggregation <- function(labels, year, regionNames) {
   cat("Processing labels", paste(labels, collapse=", "), "and year", year, "\n")
   ptYear <- proc.time()
-  values <- vapply(
+  valueList <- lapply(
     regionNames,
     \(regionName) {
       pt <- proc.time()
@@ -92,8 +92,13 @@ processYearNaryAggregation <- function(labels, year, regionNames) {
 
       cat("done after", (proc.time()-pt)[3], "s\n")
       return(value)
-    },
-    double(length(.info$aggregateExpressionList)))
+    })
+  stopifnot(all(vapply(valueList, length, numeric(1)) == length(.info$aggregateExpressionList)))
+  values <- matrix(
+    unlist(valueList),
+    ncol = length(.info$aggregateExpressionList),
+    byrow = TRUE)
+  colnames(value) <- names(.info$aggregateExpressionList)
   result <- bind_cols(
     as_tibble(labels) |> dplyr::rename_with(\(x) paste0(x, "_label")),
     tibble(
