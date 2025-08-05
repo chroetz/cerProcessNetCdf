@@ -59,15 +59,24 @@ ncLoadTimeDimension <- function(nc, timeDimName = NULL) {
     \(i) att.inq.nc(nc, timeDimName, i)$name)
   if ("units" %in% attNames) {
     timeUnitDescription <- att.get.nc(nc, timeDimName, "units")
-    pattern <- "^days since ([\\d-]+)( \\d{2}:\\d{2}:(\\d{2})?)?"
-    stopifnot(str_detect(timeUnitDescription, pattern))
-    startDayText <- str_match(timeUnitDescription, pattern)[,2]
-    startDate <- as.Date(startDayText)
-    timeDates <- startDate + lubridate::days(timeValues)
-    years <- lubridate::year(timeDates)
-    formattedStartDate <- format(startDate, "%B %d, %Y")
-    cat(
-      "Assume that time values are days since year", startDate, "(", formattedStartDate, ").\n")
+    patternDaysSince <- "^days since ([\\d-]+)( \\d{2}:\\d{2}:(\\d{2})?)?"
+    patternYearsSince <- "^years since ([\\d-]+)"
+    if (str_detect(timeUnitDescription, patternDaysSince)) {
+      startDayText <- str_match(timeUnitDescription, patternDaysSince)[,2]
+      startDate <- as.Date(startDayText)
+      timeDates <- startDate + lubridate::days(timeValues)
+      years <- lubridate::year(timeDates)
+      formattedStartDate <- format(startDate, "%B %d, %Y")
+      cat("Assume that time values are days since year", startDate, "(", formattedStartDate, ").\n")
+    } else if (str_detect(timeUnitDescription, patternYearsSince)) {
+      startYearText <- str_match(timeUnitDescription, patternYearsSince)[,2]
+      startYear <- as.integer(startYearText)
+      stopifnot(is.finite(startYear))
+      years <- startYear + timeValues
+      cat("Assume that time values are days since year", startYear, ".\n")
+    } else {
+      stop("Unknown time format: ", timeUnitDescription)
+    }
   } else {
     years <- timeValues
     cat("Assume that time values are years.\n")
