@@ -60,7 +60,7 @@ ncLoadTimeDimension <- function(nc, timeDimName = NULL) {
   if ("units" %in% attNames) {
     timeUnitDescription <- att.get.nc(nc, timeDimName, "units")
     patternDaysSince <- "^days since ([\\d-]+)( \\d{2}:\\d{2}:(\\d{2})?)?"
-    patternYearsSince <- "^years since ([\\d-]+)"
+    patternYearsSince <- "^years since ([\\d]+)"
     if (str_detect(timeUnitDescription, patternDaysSince)) {
       startDayText <- str_match(timeUnitDescription, patternDaysSince)[,2]
       startDate <- as.Date(startDayText)
