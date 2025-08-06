@@ -698,7 +698,7 @@ getDataLabelsAndYearsAll <- function(yearsFilter) {
   }
   labelsAndYears <- labelsAndYearsList |> first()
   for (nm in nms[-1]) {
-    isWithYear <- "year" %in% labelsAndYearsList[[nm]]
+    isWithYear <- "year" %in% names(labelsAndYearsList[[nm]])
     if (isWithYear) {
       if ("year" %in% names(labelsAndYears)) {
         labelsAndYears <- inner_join(labelsAndYears, labelsAndYearsList[[nm]], join_by(year))
