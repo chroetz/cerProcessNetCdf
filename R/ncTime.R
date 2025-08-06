@@ -73,7 +73,7 @@ ncLoadTimeDimension <- function(nc, timeDimName = NULL) {
       startYear <- as.integer(startYearText)
       stopifnot(is.finite(startYear))
       years <- startYear + timeValues
-      cat("Assume that time values are days since year", startYear, ".\n")
+      cat("Assume that time values are years since year", startYear, ".\n")
     } else {
       stop("Unknown time format: ", timeUnitDescription)
     }
@@ -82,11 +82,15 @@ ncLoadTimeDimension <- function(nc, timeDimName = NULL) {
     cat("Assume that time values are years.\n")
   }
 
-  if (max(abs(years - round(years))) >= sqrt(.Machine$double.eps)) {
-    stop(
-      "Could not correctly transform time dimension to years. Got:\n",
+  if (max(abs(years - round(years))) <= 1/360) { # tolerance for year value extraction of about one day
+    years <- round(years)
+  } else {
+    warning(
+      "Could not perfectly transform time dimension to years. Got:\n",
       paste0(years, collapse = ", "),
-      "\nThese are not integer years.")
+      "\nThese are not integer years. Rounding them to integer. ",
+      "Description of time unit is ", timeUnitDescription)
+    years <- round(years)
   }
 
   return(
