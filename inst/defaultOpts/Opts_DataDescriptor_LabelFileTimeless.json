@@ -3,5 +3,6 @@
   "dirPath": "path/to/dir",
   "pattern": "fileRegex",
   "recursive": false,
-  "dataVariableName": null
+  "dataVariableName": null,
+  "naMode": null
 }

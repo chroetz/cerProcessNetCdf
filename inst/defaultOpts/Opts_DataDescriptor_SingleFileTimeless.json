@@ -1,5 +1,6 @@
 {
   "_class": ["SingleFileTimeless", "DataDescriptor", "Opts"],
   "filePath": "path/to/file",
-  "dataVariableNames": null
+  "dataVariableNames": null,
+  "naMode": null
 }
