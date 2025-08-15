@@ -51,9 +51,11 @@ openNc <- function(filePath) {
 
 varGetNc <- function(
   ncfile, variable, start=NA, count=NA,
-  na.mode=2, collapse=TRUE, unpack=FALSE, rawchar=FALSE, fitnum=FALSE,
+  na.mode=NULL, collapse=TRUE, unpack=FALSE, rawchar=FALSE, fitnum=FALSE,
   cache_bytes=NA, cache_slots=NA, cache_preemption=NA) {
-    # changes default for na.mode to 2 (from 4)
+    if (is.null(na.mode)) {
+      na.mode <- 4
+    }
     var.get.nc(
       ncfile=ncfile, variable=variable, start=start, count=count,
       na.mode=na.mode, collapse=collapse, unpack=unpack, rawchar=rawchar, fitnum=fitnum,

@@ -78,7 +78,9 @@ getDataTimeAllMultiFileOneFile <- function(filePath, dataInfo, label, lotIdx, li
     label,
     start = start,
     count = count,
-    collapse = FALSE)
+    na.mode = dataInfo$descriptor$naMode,
+    collapse = FALSE
+  )
   close.nc(nc)
 
   if (dataInfo$descriptor$setNaToZero) {

@@ -116,7 +116,8 @@ getAllForTimes <- function(meta, timeValues) {
       m$varName,
       start = start,
       count = count,
-      collapse = FALSE)
+      collapse = FALSE
+    )
     close.nc(nc)
     dimnames(data) <- list(lon = m$lon, lat = m$lat, time = timeValues)
     return(data)

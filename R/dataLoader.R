@@ -74,7 +74,7 @@ loadDataMultiFile <- function(dataDescriptor) {
         filePath = filePaths
       ) |>
         arrange(startTime) |>
-        tidyr::unnest_longer(year)
+        tidyr::unnest_longer("year")
     )
 
   if (!"data" %in% names(.info)) .info$data <- list()
@@ -426,7 +426,9 @@ getDataMultiFile <- function(dataInfo, year, label, bbInfo = NULL) {
     label,
     start = start,
     count = count,
-    collapse = FALSE)
+    na.mode = dataInfo$descriptor$naMode,
+    collapse = FALSE
+  )
   close.nc(nc)
 
   if (dataInfo$descriptor$setNaToZero) {
@@ -471,7 +473,9 @@ getDataYearlyFiles <- function(dataInfo, year, label, bbInfo = NULL) {
     dataInfo$variableName,
     start = start,
     count = count,
-    collapse = FALSE)
+    na.mode = dataInfo$descriptor$naMode,
+    collapse = FALSE
+  )
   close.nc(nc)
 
   if (dataInfo$descriptor$setNaToZero) {
@@ -518,7 +522,9 @@ getDataLabelFileTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
     dataInfo$variableName,
     start = start,
     count = count,
-    collapse = FALSE)
+    na.mode = dataInfo$descriptor$naMode,
+    collapse = FALSE
+  )
   close.nc(nc)
 
   if (dataInfo$descriptor$setNaToZero) {
@@ -565,6 +571,7 @@ getDataSingleFileTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
     label,
     start = start,
     count = count,
+    na.mode = dataInfo$descriptor$naMode,
     collapse = FALSE
   )
   close.nc(nc)
@@ -612,6 +619,7 @@ getDataSingleFile <- function(dataInfo, year, label, bbInfo = NULL) {
     label,
     start = start,
     count = count,
+    na.mode = dataInfo$descriptor$naMode,
     collapse = FALSE
   )
   close.nc(nc)
@@ -701,7 +709,7 @@ getDataLabelsAndYearsAll <- function(yearsFilter) {
     isWithYear <- "year" %in% names(labelsAndYearsList[[nm]])
     if (isWithYear) {
       if ("year" %in% names(labelsAndYears)) {
-        labelsAndYears <- inner_join(labelsAndYears, labelsAndYearsList[[nm]], join_by(year))
+        labelsAndYears <- inner_join(labelsAndYears, labelsAndYearsList[[nm]], join_by("year"))
       } else {
         labelsAndYears <- tidyr::expand_grid(labelsAndYears, labelsAndYearsList[[nm]])
       }

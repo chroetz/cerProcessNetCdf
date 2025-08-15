@@ -90,12 +90,14 @@ getMaskValues <- function(regionName, maskList, bbInfo = NULL) {
       regionName,
       start = c(bbInfo$min_lon, bbInfo$min_lat),
       count = c(bbInfo$max_lon - bbInfo$min_lon + 1, bbInfo$max_lat - bbInfo$min_lat + 1),
-      collapse = FALSE)
+      collapse = FALSE
+    )
   } else {
     values <- varGetNc(
       maskList$nc,
       regionName,
-      collapse = FALSE)
+      collapse = FALSE
+    )
   }
 
   if (any(is.na(values))) {
