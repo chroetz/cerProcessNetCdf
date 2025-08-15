@@ -21,7 +21,7 @@ runConcatNetCdf <- function(
     varInfo <- var.inq.nc(firstInNc, dimInfo$name)
     dim.def.nc(outNc, dimInfo$name, dimInfo$length)
     var.def.nc(outNc, dimInfo$name, varInfo$type, dimInfo$name)
-    var.put.nc(outNc, dimInfo$name, var.get.nc(firstInNc, dimInfo$name))
+    var.put.nc(outNc, dimInfo$name, varGetNc(firstInNc, dimInfo$name))
     for (j in seq_len(varInfo$natts)) {
       attInfo <- att.inq.nc(firstInNc, dimInfo$name, j - 1)
       att.put.nc(
@@ -48,7 +48,7 @@ runConcatNetCdf <- function(
       cat(varName, ",", sep="")
       varInfo <- var.inq.nc(inNc, varName)
       var.def.nc(outNc, varName, varInfo$type, varInfo$dimids, deflate=9)
-      var.put.nc(outNc, varName, var.get.nc(inNc, varName))
+      var.put.nc(outNc, varName, varGetNc(inNc, varName))
       for (j in seq_len(varInfo$natts)) {
         attInfo <- att.inq.nc(inNc, varName, j - 1)
         att.put.nc(

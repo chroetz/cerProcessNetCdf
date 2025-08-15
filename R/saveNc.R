@@ -71,7 +71,7 @@ initCopyNetCdf <- function(outFilePath, sourceFilePath, deflate = 9, ...) {
       if (varInq$name %in% names(overwriteDim)) {
         var.put.nc(outNc, varInq$name, overwriteDim[[varInq$name]])
       } else {
-        var.put.nc(outNc, varInq$name, var.get.nc(nc, varInq$name))
+        var.put.nc(outNc, varInq$name, varGetNc(nc, varInq$name))
       }
     }
     if (varInq$name %in% names(overwriteDim)) {

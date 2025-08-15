@@ -47,3 +47,16 @@ openNc <- function(filePath) {
   if (!file.exists(filePath)) stop(filePath, " does not exist")
   open.nc(filePath)
 }
+
+
+varGetNc <- function(
+  ncfile, variable, start=NA, count=NA,
+  na.mode=0, collapse=TRUE, unpack=FALSE, rawchar=FALSE, fitnum=FALSE,
+  cache_bytes=NA, cache_slots=NA, cache_preemption=NA) {
+    # changes default for na.mode to 0 (from 4)
+    var.get.nc(
+      ncfile=ncfile, variable=variable, start=start, count=count,
+      na.mode=na.mode, collapse=collapse, unpack=unpack, rawchar=rawchar, fitnum=fitnum,
+      cache_bytes=cache_bytes, cache_slots=cache_slots, cache_preemption=cache_preemption
+    )
+}

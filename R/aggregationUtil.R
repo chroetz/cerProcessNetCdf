@@ -67,8 +67,8 @@ openAndCheckMaskFile <- function(filePath) {
   maskList <- list()
   nc <- openNc(filePath)
   maskList$nc <- nc
-  maskList$lonValues <- var.get.nc(nc, "lon") |> as.vector()
-  maskList$latValues <- var.get.nc(nc, "lat") |> as.vector()
+  maskList$lonValues <- varGetNc(nc, "lon") |> as.vector()
+  maskList$latValues <- varGetNc(nc, "lat") |> as.vector()
   assertLonLat(maskList$lonValues, rev(maskList$latValues))
   maskList$lonLatIdx <-
     c(lon = ncGetDimensionIndex(nc, "lon"),
@@ -85,14 +85,14 @@ getMaskValues <- function(regionName, maskList, bbInfo = NULL) {
   # TODO: respect target format
   if (hasValue(bbInfo)) {
     # TODO: assumes lon, lat order and same format as bounding box
-    values <- var.get.nc(
+    values <- varGetNc(
       maskList$nc,
       regionName,
       start = c(bbInfo$min_lon, bbInfo$min_lat),
       count = c(bbInfo$max_lon - bbInfo$min_lon + 1, bbInfo$max_lat - bbInfo$min_lat + 1),
       collapse = FALSE)
   } else {
-    values <- var.get.nc(
+    values <- varGetNc(
       maskList$nc,
       regionName,
       collapse = FALSE)
@@ -140,7 +140,7 @@ readMaskSum <- function(filePath) {
     "Grid format of mask sum:",
     format(gridFormat),
     "\n")
-  maskSum <- var.get.nc(nc, "maskSum")
+  maskSum <- varGetNc(nc, "maskSum")
 
   .info$maskSum <- ensureGridFormat(
     maskSum,

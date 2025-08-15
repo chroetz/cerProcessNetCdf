@@ -97,8 +97,8 @@ getNativeGridFormatFromNc <- function(nc, variableName = NULL, onlyLonLat = FALS
 
   allVarNames <- ncGetVariableNames(nc)
   stopifnot(c("lon", "lat") %in% allVarNames)
-  lonValues <- var.get.nc(nc, "lon") |> as.vector()
-  latValues <- var.get.nc(nc, "lat") |> as.vector()
+  lonValues <- varGetNc(nc, "lon") |> as.vector()
+  latValues <- varGetNc(nc, "lat") |> as.vector()
   if (onlyLonLat) {
     lonFirst <- NA
   } else {

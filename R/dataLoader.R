@@ -421,7 +421,7 @@ getDataMultiFile <- function(dataInfo, year, label, bbInfo = NULL) {
   count <- permuteDimIdsLonLatTime(dataInfo, lonLatTimeCount)
 
   nc <- openNc(info$filePath)
-  data <- var.get.nc(
+  data <- varGetNc(
     nc,
     label,
     start = start,
@@ -466,7 +466,7 @@ getDataYearlyFiles <- function(dataInfo, year, label, bbInfo = NULL) {
   count <- permuteDimIdsLonLat(dataInfo, lonLatCount)
 
   nc <- openNc(info$filePath)
-  data <- var.get.nc(
+  data <- varGetNc(
     nc,
     dataInfo$variableName,
     start = start,
@@ -513,7 +513,7 @@ getDataLabelFileTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
   count <- permuteDimIdsLonLat(dataInfo, lonLatCount)
 
   nc <- openNc(info$filePath)
-  data <- var.get.nc(
+  data <- varGetNc(
     nc,
     dataInfo$variableName,
     start = start,
@@ -560,7 +560,7 @@ getDataSingleFileTimeless <- function(dataInfo, year, label, bbInfo = NULL) {
 
   nc <- openNc(dataInfo$descriptor$filePath)
 
-  data <- var.get.nc(
+  data <- varGetNc(
     nc,
     label,
     start = start,
@@ -607,7 +607,7 @@ getDataSingleFile <- function(dataInfo, year, label, bbInfo = NULL) {
 
   nc <- openNc(dataInfo$descriptor$filePath)
 
-  data <- var.get.nc(
+  data <- varGetNc(
     nc,
     label,
     start = start,

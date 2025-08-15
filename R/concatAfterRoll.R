@@ -75,9 +75,9 @@ getNetCdfDimensionMeta <- function(filePaths) {
     res <- list(
       filePath = filePath,
       varName = ncGetNonDimVariableNames(nc),
-      lon = var.get.nc(nc, "lon"),
-      lat = var.get.nc(nc, "lat"),
-      time = var.get.nc(nc, "time"),
+      lon = varGetNc(nc, "lon"),
+      lat = varGetNc(nc, "lat"),
+      time = varGetNc(nc, "time"),
       timeInterpreted = getNcTimes(nc, "time"))
     close.nc(nc)
     return(res)
@@ -111,7 +111,7 @@ getAllForTimes <- function(meta, timeValues) {
     start <- c(1, 1, min(timeIdx))
     count <- c(NA, NA, length(timeIdx))
     nc <- openNc(m$filePath)
-    data <- var.get.nc(
+    data <- varGetNc(
       nc,
       m$varName,
       start = start,

@@ -46,8 +46,8 @@ getNetCdfLatLonMeta <- function(filePaths, latDecreasing) {
     res <- list(
       filePath = filePath,
       varName = ncGetNonDimVariableNames(nc),
-      lon = var.get.nc(nc, "lon"),
-      lat = var.get.nc(nc, "lat"))
+      lon = varGetNc(nc, "lon"),
+      lat = varGetNc(nc, "lat"))
     close.nc(nc)
     return(res)
   })

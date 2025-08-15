@@ -18,7 +18,7 @@ saveBoundingBoxes <- function(
     varInfo <- var.inq.nc(maskNc, dimInfo$name)
     dim.def.nc(outNc, dimInfo$name, dimInfo$length)
     var.def.nc(outNc, dimInfo$name, varInfo$type, dimInfo$name)
-    var.put.nc(outNc, dimInfo$name, var.get.nc(maskNc, dimInfo$name))
+    var.put.nc(outNc, dimInfo$name, varGetNc(maskNc, dimInfo$name))
     for (j in seq_len(varInfo$natts)) {
       attInfo <- att.inq.nc(maskNc, dimInfo$name, j - 1)
       att.put.nc(
@@ -57,7 +57,7 @@ getBoundingBoxesFromMask <- function(path) {
     \(i) {
       cat("Processing region ", i, "... ")
       pt <- proc.time()
-      mask <- var.get.nc(nc, ndims + i - 1)
+      mask <- varGetNc(nc, ndims + i - 1)
       bbox <- getBoundingBox(mask)
       cat("done in ", (proc.time() - pt)[3], "s.\n")
       return(bbox)

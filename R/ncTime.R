@@ -6,7 +6,7 @@ getFileTimes <- function(ncFilePath, timeDimName) {
 }
 
 getNcTimes <- function(nc, timeDimName) {
-  values <- var.get.nc(nc, timeDimName)
+  values <- varGetNc(nc, timeDimName)
   unitText <- att.get.nc(nc, timeDimName, "units")
   times <- numericToTime(values, unitText)
   return(times)
@@ -51,7 +51,7 @@ ncLoadTimeDimension <- function(nc, timeDimName = NULL) {
   }
 
   stopifnot(length(timeDimName) == 1)
-  timeValues <- var.get.nc(nc, timeDimName) |> as.vector()
+  timeValues <- varGetNc(nc, timeDimName) |> as.vector()
   timeVarInfo <- var.inq.nc(nc, timeDimName)
 
   attNames <- sapply(
