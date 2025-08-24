@@ -23,8 +23,8 @@ numericToTime <- function(values, unitText) {
     seconds = origin + lubridate::seconds(values),
     minutes = origin + lubridate::minutes(values),
     hours = origin + lubridate::hours(values),
-    days = origin + lubridate::days(values),
-    weeks = origin + lubridate::weeks(values),
+    days = origin + lubridate::hours(values * 24),  # Convert fractional days to hours
+    weeks = origin + lubridate::hours(values * 24 * 7),  # Convert fractional weeks to hours
     years = origin + lubridate::years(values),
     stop("Unknown time unit: ", match[2])
   )
@@ -64,7 +64,7 @@ ncLoadTimeDimension <- function(nc, timeDimName = NULL) {
     if (str_detect(timeUnitDescription, patternDaysSince)) {
       startDayText <- str_match(timeUnitDescription, patternDaysSince)[,2]
       startDate <- as.Date(startDayText)
-      timeDates <- startDate + lubridate::days(timeValues)
+      timeDates <- startDate + lubridate::hours(timeValues * 24)  # Convert fractional days to hours
       years <- lubridate::year(timeDates)
       formattedStartDate <- format(startDate, "%B %d, %Y")
       cat("Assume that time values are days since year", startDate, "(", formattedStartDate, ").\n")
